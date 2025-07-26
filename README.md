@@ -253,18 +253,6 @@ const importData = (jsonData) => {
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 🙏 致谢
-
-- 感谢 [Edmond](https://www.zhihu.com/question/19888447/answer/1930799480401293785) 提出的CTDP理论
-- 基于现代心理学和行为经济学研究
-- 灵感来源于番茄工作法、游戏化理论等
-
 ## 📞 联系方式
 
-如有问题或建议，请通过以下方式联系：
-- 提交 [Issue](https://github.com/yourusername/momentum/issues)
-- 发送邮件至：your.email@example.com
-
----
-
-**开始你的专注之旅，用科学的方法战胜拖延！** 🚀
+如有问题或建议，发送邮件至：kenx@andrew.cmu.edu
