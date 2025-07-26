@@ -134,18 +134,18 @@ npm run preview
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## TO DO
-<img width="775" height="951" alt="image" src="https://github.com/user-attachments/assets/39522b04-f284-449b-80d5-21434862f3ee" />
-<img width="640" height="568" alt="image" src="https://github.com/user-attachments/assets/f54b2816-9869-46bf-8714-bdaee0c6423e" />
-<br>
-<br>
-- [x] 增加链式可嵌套工作单元
-- [ ] 增加开箱即用的预设（如考试周专用等）
-- [ ] 防止日常摆烂的改进版本（递归稳态迭代协议（Recursive Stabilization Iteration Protocol, RSIP））实现
 
-<br>
-<br>
+- [ ] **增加链式可嵌套工作单元**
+  *示意图：*
+  <img width="600" alt="嵌套单元示例1" src="https://github.com/user-attachments/assets/39522b04-f284-449b-80d5-21434862f3ee" />
+  <img width="600" alt="嵌套单元示例2" src="https://github.com/user-attachments/assets/f54b2816-9869-46bf-8714-bdaee0c6423e" />
 
-<img width="1440" height="683" alt="image" src="https://github.com/user-attachments/assets/29b5274a-e207-476a-ba31-e45affb73bb6" />
+- [ ] **增加开箱即用的预设**
+  - 如：考试周专用等
+
+- [ ] **防止日常摆烂的改进版本（递归稳态迭代协议, RSIP）实现**
+  *示意图：*
+  <img width="700" alt="RSIP 设计图" src="https://github.com/user-attachments/assets/29b5274a-e207-476a-ba31-e45affb73bb6" />
 
 
 ## 📞 联系方式
