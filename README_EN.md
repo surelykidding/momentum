@@ -137,7 +137,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## TO DO
 
 - [ ] **Add chainable nested work units**
-  *Diagrams:*
+ <br> *Diagrams:*
+<br>
   <img width="600" alt="Nested unit example 1" src="https://github.com/user-attachments/assets/39522b04-f284-449b-80d5-21434862f3ee" />
   <img width="600" alt="Nested unit example 2" src="https://github.com/user-attachments/assets/f54b2816-9869-46bf-8714-bdaee0c6423e" />
 
