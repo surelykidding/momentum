@@ -3,6 +3,7 @@
 基于链式时延协议（CTDP）理论的自控力训练工具，通过"神圣座位原理"、"下必为例原理"和"线性时延原理"帮助用户建立强大的习惯链条。
 详情请见：
 https://www.zhihu.com/question/19888447/answer/1930799480401293785
+<br>
 <img width="3000" height="1130" alt="image" src="https://github.com/user-attachments/assets/8765b5c0-4f7a-4d69-a826-d7a6bcef853f" />
 
 
@@ -120,4 +121,5 @@ npm run preview
 ## 📞 联系方式
 
 如有问题或建议，发送邮件至：kenx@andrew.cmu.edu
+<br>
 我的知乎账号：https://www.zhihu.com/people/blues-68-53
