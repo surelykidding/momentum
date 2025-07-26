@@ -11,6 +11,7 @@ interface DashboardProps {
   onScheduleChain: (chainId: string) => void;
   onViewChainDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
+  onDeleteChain: (chainId: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -21,6 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onScheduleChain,
   onViewChainDetail,
   onCancelScheduledSession,
+  onDeleteChain,
 }) => {
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
@@ -79,6 +81,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onScheduleChain={onScheduleChain}
                   onViewDetail={onViewChainDetail}
                   onCancelScheduledSession={onCancelScheduledSession}
+                  onDelete={onDeleteChain}
                 />
               ))}
             </div>

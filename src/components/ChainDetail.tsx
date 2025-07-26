@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chain, CompletionHistory } from '../types';
-import { ArrowLeft, Flame, CheckCircle, XCircle, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Flame, CheckCircle, XCircle, Calendar, Clock, AlertCircle, Trash2 } from 'lucide-react';
 import { formatTime } from '../utils/time';
 
 interface ChainDetailProps {
@@ -8,6 +8,7 @@ interface ChainDetailProps {
   history: CompletionHistory[];
   onBack: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }
 
 export const ChainDetail: React.FC<ChainDetailProps> = ({
@@ -15,9 +16,11 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
   history,
   onBack,
   onEdit,
+  onDelete,
 }) => {
   const chainHistory = history.filter(h => h.chainId === chain.id);
   const recentHistory = chainHistory.slice(-10).reverse();
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const successRate = chain.totalCompletions > 0 
     ? Math.round((chain.totalCompletions / (chain.totalCompletions + chain.totalFailures)) * 100)
@@ -36,12 +39,21 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
             </button>
             <h1 className="text-3xl font-bold text-white">{chain.name}</h1>
           </div>
-          <button
-            onClick={onEdit}
-            className="bg-orange-500 hover:bg-orange-400 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
-          >
-            编辑链条
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={onEdit}
+              className="bg-orange-500 hover:bg-orange-400 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
+            >
+              编辑链条
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+            >
+              <Trash2 size={16} />
+              <span>删除</span>
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -194,6 +206,59 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
             </div>
           </div>
         </div>
+        
+        {/* Delete confirmation modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-xl p-8 max-w-lg border border-gray-700">
+              <div className="text-center mb-6">
+                <Trash2 className="text-red-400 mx-auto mb-4" size={48} />
+                <h3 className="text-2xl font-bold text-white mb-2">确认删除链条</h3>
+                <p className="text-gray-300 mb-4">
+                  你确定要删除链条 "<span className="text-orange-400 font-medium">{chain.name}</span>" 吗？
+                </p>
+                <div className="bg-red-900/30 rounded-lg p-4 border border-red-700/50 mb-4">
+                  <p className="text-red-300 text-sm font-medium mb-2">
+                    ⚠️ 此操作将永久删除以下数据：
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-red-300 text-sm">
+                    <div>
+                      <p>• 主链记录: #{chain.currentStreak}</p>
+                      <p>• 预约链记录: #{chain.auxiliaryStreak}</p>
+                      <p>• 总完成次数: {chain.totalCompletions}</p>
+                    </div>
+                    <div>
+                      <p>• 失败次数: {chain.totalFailures}</p>
+                      <p>• 预约失败: {chain.auxiliaryFailures}</p>
+                      <p>• 历史记录: {chainHistory.length} 条</p>
+                    </div>
+                  </div>
+                  <p className="text-red-300 text-sm mt-2">
+                    • 所有例外规则和设置
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete();
+                    setShowDeleteConfirm(false);
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                >
+                  确认删除
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

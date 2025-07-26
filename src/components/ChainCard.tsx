@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Chain, ScheduledSession } from '../types';
-import { Play, Clock, Flame, Calendar } from 'lucide-react';
+import { Play, Clock, Flame, Calendar, Trash2, MoreVertical } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 
 interface ChainCardProps {
@@ -10,6 +10,7 @@ interface ChainCardProps {
   onScheduleChain: (chainId: string) => void;
   onViewDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
+  onDelete: (chainId: string) => void;
 }
 
 export const ChainCard: React.FC<ChainCardProps> = ({
@@ -19,8 +20,11 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   onScheduleChain,
   onViewDetail,
   onCancelScheduledSession,
+  onDelete,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     if (!scheduledSession) return;
@@ -40,11 +44,97 @@ export const ChainCard: React.FC<ChainCardProps> = ({
 
   const isScheduled = scheduledSession && timeRemaining > 0;
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+    setShowMenu(false);
+  };
+
+  const handleConfirmDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(chain.id);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
+  };
+
   return (
-    <div 
-      className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg cursor-pointer"
-      onClick={() => onViewDetail(chain.id)}
-    >
+    <div className="relative">
+      <div 
+        className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg cursor-pointer"
+        onClick={() => onViewDetail(chain.id)}
+      >
+        {/* Menu button */}
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="p-1 text-gray-400 hover:text-white transition-colors rounded"
+          >
+            <MoreVertical size={16} />
+          </button>
+          
+          {showMenu && (
+            <div className="absolute right-0 top-8 bg-gray-700 rounded-lg shadow-lg border border-gray-600 py-1 z-10">
+              <button
+                onClick={handleDeleteClick}
+                className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600 flex items-center space-x-2"
+              >
+                <Trash2 size={14} />
+                <span>删除链条</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+      
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md border border-gray-700">
+            <div className="text-center mb-6">
+              <Trash2 className="text-red-400 mx-auto mb-4" size={48} />
+              <h3 className="text-xl font-bold text-white mb-2">确认删除</h3>
+              <p className="text-gray-300 mb-4">
+                你确定要删除链条 "<span className="text-orange-400 font-medium">{chain.name}</span>" 吗？
+              </p>
+              <div className="bg-red-900/30 rounded-lg p-4 border border-red-700/50 mb-4">
+                <p className="text-red-300 text-sm">
+                  ⚠️ 此操作将永久删除：
+                </p>
+                <ul className="text-red-300 text-sm mt-2 space-y-1">
+                  <li>• 链条的所有设置和规则</li>
+                  <li>• 当前连续记录 (#{chain.currentStreak})</li>
+                  <li>• 预约链记录 (#{chain.auxiliaryStreak})</li>
+                  <li>• 所有历史完成记录</li>
+                  <li>• 任何进行中的预约</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-xl font-semibold text-white mb-1">{chain.name}</h3>

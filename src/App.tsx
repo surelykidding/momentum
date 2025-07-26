@@ -415,6 +415,46 @@ function App() {
     }));
   };
 
+  const handleDeleteChain = (chainId: string) => {
+    setState(prev => {
+      // Remove the chain
+      const updatedChains = prev.chains.filter(chain => chain.id !== chainId);
+      
+      // Remove any scheduled sessions for this chain
+      const updatedScheduledSessions = prev.scheduledSessions.filter(
+        session => session.chainId !== chainId
+      );
+      
+      // Remove completion history for this chain
+      const updatedHistory = prev.completionHistory.filter(
+        history => history.chainId !== chainId
+      );
+      
+      // If currently active session belongs to this chain, clear it
+      const updatedActiveSession = prev.activeSession?.chainId === chainId 
+        ? null 
+        : prev.activeSession;
+      
+      // Save to storage
+      storage.saveChains(updatedChains);
+      storage.saveScheduledSessions(updatedScheduledSessions);
+      storage.saveCompletionHistory(updatedHistory);
+      if (!updatedActiveSession) {
+        storage.saveActiveSession(null);
+      }
+      
+      return {
+        ...prev,
+        chains: updatedChains,
+        scheduledSessions: updatedScheduledSessions,
+        completionHistory: updatedHistory,
+        activeSession: updatedActiveSession,
+        currentView: updatedActiveSession ? prev.currentView : 'dashboard',
+        viewingChainId: prev.viewingChainId === chainId ? null : prev.viewingChainId,
+      };
+    });
+  };
+
   // Render current view
   switch (state.currentView) {
     case 'editor':
@@ -478,6 +518,7 @@ function App() {
             history={state.completionHistory}
             onBack={handleBackToDashboard}
             onEdit={() => handleEditChain(viewingChain.id)}
+            onDelete={() => handleDeleteChain(viewingChain.id)}
           />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
@@ -501,6 +542,7 @@ function App() {
             onScheduleChain={handleScheduleChain}
             onViewChainDetail={handleViewChainDetail}
             onCancelScheduledSession={handleCancelScheduledSession}
+            onDeleteChain={handleDeleteChain}
           />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
