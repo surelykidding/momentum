@@ -138,7 +138,7 @@ npm run preview
 <img width="640" height="568" alt="image" src="https://github.com/user-attachments/assets/f54b2816-9869-46bf-8714-bdaee0c6423e" />
 <br>
 <br>
-- [ ] 增加链式可嵌套工作单元
+- [x] 增加链式可嵌套工作单元
 - [ ] 增加开箱即用的预设（如考试周专用等）
 - [ ] 防止日常摆烂的改进版本（递归稳态迭代协议（Recursive Stabilization Iteration Protocol, RSIP））实现
 
