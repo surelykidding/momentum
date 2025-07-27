@@ -96,39 +96,59 @@ export const ChainCard: React.FC<ChainCardProps> = ({
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 max-w-md border border-gray-700">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4 border border-gray-700">
             <div className="text-center mb-6">
               <Trash2 className="text-red-400 mx-auto mb-4" size={48} />
               <h3 className="text-xl font-bold text-white mb-2">确认删除</h3>
               <p className="text-gray-300 mb-4">
                 你确定要删除链条 "<span className="text-orange-400 font-medium">{chain.name}</span>" 吗？
               </p>
-              <div className="bg-red-900/30 rounded-lg p-4 border border-red-700/50 mb-4">
+            </div>
+            
+            <div className="bg-red-900/30 rounded-lg p-4 border border-red-700/50 mb-6">
+              <div className="text-center mb-4">
                 <p className="text-red-300 text-sm">
                   ⚠️ 此操作将永久删除：
                 </p>
-                <ul className="text-red-300 text-sm mt-2 space-y-1">
-                  <li>• 链条的所有设置和规则</li>
-                  <li>• 当前连续记录 (#{chain.currentStreak})</li>
-                  <li>• 预约链记录 (#{chain.auxiliaryStreak})</li>
-                  <li>• 所有历史完成记录</li>
-                  <li>• 任何进行中的预约</li>
-                </ul>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-red-300 text-sm">
+                <div className="bg-red-800/30 rounded-lg p-3">
+                  <div className="font-medium mb-2">📊 统计数据</div>
+                  <div>• 主链记录: #{chain.currentStreak}</div>
+                  <div>• 预约链记录: #{chain.auxiliaryStreak}</div>
+                  <div>• 完成次数: {chain.totalCompletions}</div>
+                  <div>• 失败次数: {chain.totalFailures}</div>
+                </div>
+                <div className="bg-red-800/30 rounded-lg p-3">
+                  <div className="font-medium mb-2">⚙️ 设置规则</div>
+                  <div>• 触发动作设置</div>
+                  <div>• 预约信号设置</div>
+                  <div>• 任务时长配置</div>
+                  <div>• 所有例外规则</div>
+                </div>
+                <div className="bg-red-800/30 rounded-lg p-3">
+                  <div className="font-medium mb-2">📝 历史记录</div>
+                  <div>• 所有完成记录</div>
+                  <div>• 失败原因记录</div>
+                  <div>• 进行中的预约</div>
+                  <div>• 时间统计数据</div>
+                </div>
               </div>
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
               >
                 取消
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
               >
-                确认删除
+                <Trash2 size={16} />
+                <span>确认删除</span>
               </button>
             </div>
           </div>
