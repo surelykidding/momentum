@@ -92,6 +92,7 @@ When you need to interrupt a task:
    - **Rule as Failure**: Resets the chain to zero.
    - **Rule as Permitted**: Adds the behavior to the exception rules.
 <img width="1107" height="1249" alt="image" src="https://github.com/user-attachments/assets/c4dee7e4-9448-47e0-9a95-9bd78de94ad5" />
+<br>
 ### Managing Cards
 <img width="1696" height="1632" alt="image" src="https://github.com/user-attachments/assets/058cb3a0-0eed-41a4-9413-f41fa8b849a7" />
 
