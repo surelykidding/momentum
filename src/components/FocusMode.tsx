@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActiveSession, Chain } from '../types';
-import { AlertTriangle, Pause, Play } from 'lucide-react';
+import { AlertTriangle, Pause, Play, CheckCircle } from 'lucide-react';
 import { formatDuration } from '../utils/time';
 
 interface FocusModeProps {
@@ -25,6 +25,8 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showInterruptWarning, setShowInterruptWarning] = useState(false);
   const [interruptReason, setInterruptReason] = useState('');
+  const [selectedExistingRule, setSelectedExistingRule] = useState('');
+  const [useExistingRule, setUseExistingRule] = useState(false);
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
@@ -68,12 +70,34 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   };
 
   const handleJudgmentAllow = () => {
-    if (interruptReason.trim()) {
-      onAddException(interruptReason.trim());
+    const ruleToAdd = useExistingRule ? selectedExistingRule : interruptReason.trim();
+    if (ruleToAdd) {
+      // 只有在使用新规则且不存在时才添加
+      if (!useExistingRule && !chain.exceptions.includes(ruleToAdd)) {
+        onAddException(ruleToAdd);
+      }
       onComplete(); // 允许完成任务
     }
     setShowInterruptWarning(false);
   };
+
+  const handleRuleTypeChange = (useExisting: boolean) => {
+    setUseExistingRule(useExisting);
+    if (useExisting) {
+      setInterruptReason('');
+      setSelectedExistingRule(chain.exceptions[0] || '');
+    } else {
+      setSelectedExistingRule('');
+    }
+  };
+
+  const resetInterruptModal = () => {
+    setShowInterruptWarning(false);
+    setInterruptReason('');
+    setSelectedExistingRule('');
+    setUseExistingRule(false);
+  };
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
       {/* Background blur effect */}
@@ -144,15 +168,84 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               </p>
             </div>
             
-            <div className="mb-6">
-              <textarea
-                value={interruptReason}
-                onChange={(e) => setInterruptReason(e.target.value)}
-                placeholder="请描述具体行为，例如：查看手机消息、起身上厕所、与他人交谈等"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none"
-                rows={3}
-                required
-              />
+            <div className="mb-6 space-y-4">
+              {/* 规则类型选择 */}
+              {chain.exceptions.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="ruleType"
+                        checked={useExistingRule}
+                        onChange={() => handleRuleTypeChange(true)}
+                        className="text-green-500 focus:ring-green-500"
+                      />
+                      <span className="text-green-300 font-medium">使用已有例外规则</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="ruleType"
+                        checked={!useExistingRule}
+                        onChange={() => handleRuleTypeChange(false)}
+                        className="text-yellow-500 focus:ring-yellow-500"
+                      />
+                      <span className="text-yellow-300 font-medium">添加新例外规则</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* 已有规则选择 */}
+              {useExistingRule && chain.exceptions.length > 0 && (
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    选择适用的例外规则：
+                  </label>
+                  <select
+                    value={selectedExistingRule}
+                    onChange={(e) => setSelectedExistingRule(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  >
+                    {chain.exceptions.map((exception, index) => (
+                      <option key={index} value={exception}>
+                        {exception}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2 p-3 bg-green-900/30 rounded-lg border border-green-700/50">
+                    <div className="flex items-center space-x-2 text-green-300">
+                      <CheckCircle size={16} />
+                      <span className="text-sm">此行为已被允许，可以直接完成任务</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 新规则输入 */}
+              {!useExistingRule && (
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    描述具体行为：
+                  </label>
+                  <textarea
+                    value={interruptReason}
+                    onChange={(e) => setInterruptReason(e.target.value)}
+                    placeholder="请描述具体行为，例如：查看手机消息、起身上厕所、与他人交谈等"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none"
+                    rows={3}
+                    required
+                  />
+                  {interruptReason.trim() && chain.exceptions.includes(interruptReason.trim()) && (
+                    <div className="mt-2 p-3 bg-yellow-900/30 rounded-lg border border-yellow-700/50">
+                      <p className="text-yellow-300 text-sm">
+                        ⚠️ 此规则已存在，建议选择"使用已有例外规则"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -168,17 +261,28 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               
               <button
                 onClick={handleJudgmentAllow}
-                disabled={!interruptReason.trim()}
-                className="w-full bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-4 rounded-lg font-medium transition-colors duration-200"
+                disabled={useExistingRule ? !selectedExistingRule : !interruptReason.trim()}
+                className={`w-full px-6 py-4 rounded-lg font-medium transition-colors duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed text-white ${
+                  useExistingRule 
+                    ? 'bg-green-600 hover:bg-green-500' 
+                    : 'bg-yellow-600 hover:bg-yellow-500'
+                }`}
               >
                 <div className="text-left">
-                  <div className="font-bold">判定允许（下必为例）</div>
-                  <div className="text-sm text-yellow-200">此行为将永久添加到例外规则中</div>
+                  <div className="font-bold">
+                    {useExistingRule ? '使用例外规则完成任务' : '判定允许（下必为例）'}
+                  </div>
+                  <div className={`text-sm ${useExistingRule ? 'text-green-200' : 'text-yellow-200'}`}>
+                    {useExistingRule 
+                      ? '根据已有规则，此行为被允许' 
+                      : '此行为将永久添加到例外规则中'
+                    }
+                  </div>
                 </div>
               </button>
               
               <button
-                onClick={() => setShowInterruptWarning(false)}
+                onClick={resetInterruptModal}
                 className="w-full bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
               >
                 取消 - 继续任务
