@@ -113,106 +113,103 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
             />
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              神圣座位（触发动作）
-            </label>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {TRIGGER_TEMPLATES.map((template, index) => {
-                const Icon = template.icon;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleTriggerSelect(template.text)}
-                    className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
-                      trigger === template.text
-                        ? 'border-orange-500 bg-orange-500/10'
-                        : 'border-gray-600 hover:border-gray-500'
-                    }`}
-                  >
-                    <Icon className={template.color} size={20} />
-                    <span className="text-white text-sm">{template.text}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {trigger === '自定义触发器' && (
-              <input
-                type="text"
-                value={customTrigger}
-                onChange={(e) => setCustomTrigger(e.target.value)}
-                placeholder="输入你的自定义触发动作"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                required
-              />
-            )}
-          </div>
-
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              任务时长
-            </label>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {DURATION_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setDuration(preset)}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                    duration === preset
-                      ? 'border-orange-500 bg-orange-500/10 text-orange-300'
-                      : 'border-gray-600 hover:border-gray-500 text-white'
-                  }`}
-                >
-                  {preset}分钟
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-300 text-sm">自定义：</label>
-              <input
-                type="range"
-                min="5"
-                max="180"
-                step="5"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-white font-medium w-16">{duration}分钟</span>
-            </div>
-          </div>
-
-          {/* 辅助链设置 */}
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-blue-500">
-            <h3 className="text-lg font-semibold text-blue-300 mb-6">辅助链（预约链）设置</h3>
-            
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 主链设置 */}
             <div className="space-y-6">
-              <div>
+              <h3 className="text-lg font-semibold text-orange-300 border-b border-orange-500 pb-2">主链设置</h3>
+              
+              <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-orange-500">
+                <label className="block text-sm font-medium text-gray-300 mb-4">
+                  神圣座位（触发动作）
+                </label>
+                <select
+                  value={trigger}
+                  onChange={(e) => handleTriggerSelect(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 mb-4"
+                  required
+                >
+                  <option value="" disabled className="text-gray-400">
+                    选择触发动作
+                  </option>
+                  {TRIGGER_TEMPLATES.map((template, index) => (
+                    <option key={index} value={template.text} className="text-white bg-gray-700">
+                      {template.text}
+                    </option>
+                  ))}
+                </select>
+                {trigger === '自定义触发器' && (
+                  <input
+                    type="text"
+                    value={customTrigger}
+                    onChange={(e) => setCustomTrigger(e.target.value)}
+                    placeholder="输入你的自定义触发动作"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    required
+                  />
+                )}
+              </div>
+
+              <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-orange-500">
+                <label className="block text-sm font-medium text-gray-300 mb-4">
+                  任务时长
+                </label>
+                <select
+                  value={DURATION_PRESETS.includes(duration) ? duration : "custom"}
+                  onChange={(e) => {
+                    if (e.target.value === "custom") {
+                      setDuration(60); // Default custom value
+                    } else {
+                      setDuration(Number(e.target.value));
+                    }
+                  }}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 mb-4"
+                  required
+                >
+                  {DURATION_PRESETS.map((preset) => (
+                    <option key={preset} value={preset} className="text-white bg-gray-700">
+                      {preset}分钟
+                    </option>
+                  ))}
+                  <option value="custom" className="text-white bg-gray-700">自定义时长</option>
+                </select>
+                {!DURATION_PRESETS.includes(duration) && (
+                  <input
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    placeholder="输入自定义时长（分钟）"
+                    min="1"
+                    max="300"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    required
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* 辅助链设置 */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-blue-300 border-b border-blue-500 pb-2">辅助链（预约链）设置</h3>
+              
+              <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-blue-500">
                 <label className="block text-sm font-medium text-gray-300 mb-4">
                   预约信号
                 </label>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {AUXILIARY_SIGNAL_TEMPLATES.map((template, index) => {
-                    const Icon = template.icon;
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleAuxiliarySignalSelect(template.text)}
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
-                          auxiliarySignal === template.text
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-gray-600 hover:border-gray-500'
-                        }`}
-                      >
-                        <Icon className={template.color} size={20} />
-                        <span className="text-white text-sm">{template.text}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <select
+                  value={auxiliarySignal}
+                  onChange={(e) => handleAuxiliarySignalSelect(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-4"
+                  required
+                >
+                  <option value="" disabled className="text-gray-400">
+                    选择预约信号
+                  </option>
+                  {AUXILIARY_SIGNAL_TEMPLATES.map((template, index) => (
+                    <option key={index} value={template.text} className="text-white bg-gray-700">
+                      {template.text}
+                    </option>
+                  ))}
+                </select>
                 {auxiliarySignal === '自定义信号' && (
                   <input
                     type="text"
@@ -225,42 +222,44 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 )}
               </div>
 
-              <div>
+              <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-blue-500">
                 <label className="block text-sm font-medium text-gray-300 mb-4">
                   预约时长
                 </label>
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <select
+                  value={AUXILIARY_DURATION_PRESETS.includes(auxiliaryDuration) ? auxiliaryDuration : "custom"}
+                  onChange={(e) => {
+                    if (e.target.value === "custom") {
+                      setAuxiliaryDuration(25); // Default custom value
+                    } else {
+                      setAuxiliaryDuration(Number(e.target.value));
+                    }
+                  }}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-4"
+                  required
+                >
                   {AUXILIARY_DURATION_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setAuxiliaryDuration(preset)}
-                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                        auxiliaryDuration === preset
-                          ? 'border-blue-500 bg-blue-500/10 text-blue-300'
-                          : 'border-gray-600 hover:border-gray-500 text-white'
-                      }`}
-                    >
+                    <option key={preset} value={preset} className="text-white bg-gray-700">
                       {preset}分钟
-                    </button>
+                    </option>
                   ))}
-                </div>
-                <div className="flex items-center space-x-4">
-                  <label className="text-gray-300 text-sm">自定义：</label>
+                  <option value="custom" className="text-white bg-gray-700">自定义时长</option>
+                </select>
+                {!AUXILIARY_DURATION_PRESETS.includes(auxiliaryDuration) && (
                   <input
-                    type="range"
-                    min="5"
-                    max="60"
-                    step="5"
+                    type="number"
                     value={auxiliaryDuration}
                     onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
-                    className="flex-1"
+                    placeholder="输入自定义时长（分钟）"
+                    min="1"
+                    max="120"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    required
                   />
-                  <span className="text-white font-medium w-16">{auxiliaryDuration}分钟</span>
-                </div>
+                )}
               </div>
 
-              <div>
+              <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 border-l-4 border-l-blue-500">
                 <label className="block text-sm font-medium text-gray-300 mb-3">
                   预约完成条件（通常与主链触发器相同）
                 </label>
