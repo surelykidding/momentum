@@ -210,39 +210,73 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
         {/* Delete confirmation modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-xl p-8 max-w-lg border border-gray-700">
+            <div className="bg-gray-800 rounded-xl p-8 max-w-4xl w-full mx-4 border border-gray-700">
               <div className="text-center mb-6">
                 <Trash2 className="text-red-400 mx-auto mb-4" size={48} />
                 <h3 className="text-2xl font-bold text-white mb-2">确认删除链条</h3>
                 <p className="text-gray-300 mb-4">
                   你确定要删除链条 "<span className="text-orange-400 font-medium">{chain.name}</span>" 吗？
                 </p>
-                <div className="bg-red-900/30 rounded-lg p-4 border border-red-700/50 mb-4">
+              </div>
+              
+              <div className="bg-red-900/30 rounded-lg p-6 border border-red-700/50 mb-6">
+                <div className="text-center mb-4">
                   <p className="text-red-300 text-sm font-medium mb-2">
                     ⚠️ 此操作将永久删除以下数据：
                   </p>
-                  <div className="grid grid-cols-2 gap-4 text-red-300 text-sm">
-                    <div>
-                      <p>• 主链记录: #{chain.currentStreak}</p>
-                      <p>• 预约链记录: #{chain.auxiliaryStreak}</p>
-                      <p>• 总完成次数: {chain.totalCompletions}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-red-300 text-sm">
+                  <div className="bg-red-800/30 rounded-lg p-4">
+                    <div className="font-medium mb-3 flex items-center">
+                      <Flame size={16} className="mr-2" />
+                      主链数据
                     </div>
-                    <div>
-                      <p>• 失败次数: {chain.totalFailures}</p>
-                      <p>• 预约失败: {chain.auxiliaryFailures}</p>
-                      <p>• 历史记录: {chainHistory.length} 条</p>
+                    <div className="space-y-1">
+                      <div>记录: #{chain.currentStreak}</div>
+                      <div>完成: {chain.totalCompletions}</div>
+                      <div>失败: {chain.totalFailures}</div>
                     </div>
                   </div>
-                  <p className="text-red-300 text-sm mt-2">
-                    • 所有例外规则和设置
-                  </p>
+                  <div className="bg-red-800/30 rounded-lg p-4">
+                    <div className="font-medium mb-3 flex items-center">
+                      <Calendar size={16} className="mr-2" />
+                      预约链数据
+                    </div>
+                    <div className="space-y-1">
+                      <div>记录: #{chain.auxiliaryStreak}</div>
+                      <div>失败: {chain.auxiliaryFailures}</div>
+                      <div>预约设置</div>
+                    </div>
+                  </div>
+                  <div className="bg-red-800/30 rounded-lg p-4">
+                    <div className="font-medium mb-3 flex items-center">
+                      <Clock size={16} className="mr-2" />
+                      历史记录
+                    </div>
+                    <div className="space-y-1">
+                      <div>记录: {chainHistory.length} 条</div>
+                      <div>成功率: {successRate}%</div>
+                      <div>时间统计</div>
+                    </div>
+                  </div>
+                  <div className="bg-red-800/30 rounded-lg p-4">
+                    <div className="font-medium mb-3 flex items-center">
+                      <AlertCircle size={16} className="mr-2" />
+                      规则设置
+                    </div>
+                    <div className="space-y-1">
+                      <div>例外: {chain.exceptions.length} 条</div>
+                      <div>预约例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
+                      <div>所有配置</div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                  className="flex-1 bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                 >
                   取消
                 </button>
@@ -251,9 +285,10 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
                     onDelete();
                     setShowDeleteConfirm(false);
                   }}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
-                  确认删除
+                  <Trash2 size={16} />
+                  <span>确认删除</span>
                 </button>
               </div>
             </div>
