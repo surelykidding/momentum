@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme transition for smooth switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Prevent transition on theme change to avoid flash */
+.theme-transition-disable * {
+  transition: none !important;
+}
+
 @layer base {
   * {
     @apply antialiased;
@@ -9,7 +19,8 @@
   
   body {
     font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
-    @apply bg-[#FDFDFD] text-[#161615];
+    @apply bg-[#FDFDFD] dark:bg-[#0F0F0E] text-[#161615] dark:text-[#F8F8F8];
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .font-mono {
@@ -19,15 +30,32 @@
   .font-chinese {
     font-family: 'Noto Sans SC', 'Inter', system-ui, sans-serif;
   }
+  
+  /* High contrast colors for accessibility */
+  :root {
+    --color-text-primary: #161615;
+    --color-text-secondary: #6B7280;
+    --color-bg-primary: #FDFDFD;
+    --color-bg-secondary: #F9FAFB;
+    --color-border: #E5E7EB;
+  }
+  
+  .dark {
+    --color-text-primary: #F8F8F8;
+    --color-text-secondary: #9CA3AF;
+    --color-bg-primary: #0F0F0E;
+    --color-bg-secondary: #1F2937;
+    --color-border: #374151;
+  }
 }
 
 @layer components {
   .bento-card {
-    @apply bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-[1.02] hover:bg-white/90;
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-[1.02] hover:bg-white/90 dark:hover:bg-gray-800/90;
   }
   
   .bento-card-dark {
-    @apply bg-[#161615] text-white border border-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02];
+    @apply bg-[#161615] dark:bg-gray-900 text-white border border-gray-800 dark:border-gray-700 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02];
   }
   
   .gradient-primary {
@@ -39,7 +67,7 @@
   }
   
   .glass-effect {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+    @apply bg-white/10 dark:bg-gray-800/10 backdrop-blur-md border border-white/20 dark:border-gray-700/20;
   }
   
   .animate-fade-in {
@@ -52,6 +80,31 @@
   
   .animate-scale-in {
     animation: scaleIn 0.5s ease-out forwards;
+  }
+  
+  /* Focus styles for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .bento-card {
+      @apply border-2 border-gray-900 dark:border-gray-100;
+    }
+    
+    button {
+      @apply border-2 border-current;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 

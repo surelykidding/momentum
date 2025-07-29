@@ -1,6 +1,7 @@
 import React from 'react';
 import { Chain, ScheduledSession } from '../types';
 import { ChainCard } from './ChainCard';
+import { ThemeToggle } from './ThemeToggle';
 import { Plus } from 'lucide-react';
 
 interface DashboardProps {
@@ -31,6 +32,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Theme toggle in header */}
+        <div className="flex justify-end mb-6">
+          <ThemeToggle variant="dropdown" showLabel />
+        </div>
+        
         <header className="text-center mb-16 animate-fade-in">
           <div className="flex items-center justify-center space-x-4 mb-6">
             <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-lg">
@@ -40,12 +46,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h1 className="text-5xl md:text-6xl font-bold font-chinese text-[#161615] mb-2">
                 Momentum
               </h1>
-              <p className="text-sm font-mono text-gray-500 tracking-wider uppercase">
+              <p className="text-sm font-mono text-gray-500 dark:text-gray-400 tracking-wider uppercase">
                 CTDP Protocol
               </p>
             </div>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto text-lg leading-relaxed font-chinese">
+          <p className="text-gray-600 dark:text-gray-300 max-w-3xl mx-auto text-lg leading-relaxed font-chinese">
             基于链式时延协议理论，通过<span className="font-semibold text-primary-500">神圣座位原理</span>、
             <span className="font-semibold text-primary-500">下必为例原理</span>和
             <span className="font-semibold text-primary-500">线性时延原理</span>，
@@ -62,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h2 className="text-3xl font-bold font-chinese text-[#161615] mb-4">
                 创建你的第一条链
               </h2>
-              <p className="text-gray-600 mb-8 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
                 链代表你想要持续做的任务。每次成功完成，你的记录就会增长一点。
               </p>
               <button
@@ -81,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <h2 className="text-3xl font-bold font-chinese text-[#161615] mb-2">
                   你的任务链
                 </h2>
-                <p className="text-gray-500 font-mono text-sm tracking-wide">
+                <p className="text-gray-500 dark:text-gray-400 font-mono text-sm tracking-wide">
                   YOUR TASK CHAINS
                 </p>
               </div>
