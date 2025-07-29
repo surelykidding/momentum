@@ -39,12 +39,18 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
   const [trigger, setTrigger] = useState(chain?.trigger || '');
   const [customTrigger, setCustomTrigger] = useState('');
   const [duration, setDuration] = useState(chain?.duration || 45);
+  const [isCustomDuration, setIsCustomDuration] = useState(
+    chain?.duration ? !DURATION_PRESETS.includes(chain.duration) : false
+  );
   const [description, setDescription] = useState(chain?.description || '');
   
   // 辅助链状态
   const [auxiliarySignal, setAuxiliarySignal] = useState(chain?.auxiliarySignal || '');
   const [customAuxiliarySignal, setCustomAuxiliarySignal] = useState('');
   const [auxiliaryDuration, setAuxiliaryDuration] = useState(chain?.auxiliaryDuration || 15);
+  const [isCustomAuxiliaryDuration, setIsCustomAuxiliaryDuration] = useState(
+    chain?.auxiliaryDuration ? !AUXILIARY_DURATION_PRESETS.includes(chain.auxiliaryDuration) : false
+  );
   const [auxiliaryCompletionTrigger, setAuxiliaryCompletionTrigger] = useState(
     chain?.auxiliaryCompletionTrigger || ''
   );
@@ -185,11 +191,13 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
-                  value={DURATION_PRESETS.includes(duration) ? duration : "custom"}
+                  value={isCustomDuration ? "custom" : duration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
+                      setIsCustomDuration(true);
                       setDuration(60);
                     } else {
+                      setIsCustomDuration(false);
                       setDuration(Number(e.target.value));
                     }
                   }}
@@ -203,7 +211,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   ))}
                   <option value="custom" className="text-[#161615]">自定义时长</option>
                 </select>
-                {!DURATION_PRESETS.includes(duration) && (
+                {isCustomDuration && (
                   <input
                     type="number"
                     value={duration}
@@ -276,11 +284,13 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
-                  value={AUXILIARY_DURATION_PRESETS.includes(auxiliaryDuration) ? auxiliaryDuration : "custom"}
+                  value={isCustomAuxiliaryDuration ? "custom" : auxiliaryDuration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
+                      setIsCustomAuxiliaryDuration(true);
                       setAuxiliaryDuration(25);
                     } else {
+                      setIsCustomAuxiliaryDuration(false);
                       setAuxiliaryDuration(Number(e.target.value));
                     }
                   }}
@@ -294,7 +304,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   ))}
                   <option value="custom" className="text-[#161615]">自定义时长</option>
                 </select>
-                {!AUXILIARY_DURATION_PRESETS.includes(auxiliaryDuration) && (
+                {isCustomAuxiliaryDuration && (
                   <input
                     type="number"
                     value={auxiliaryDuration}
