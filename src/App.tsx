@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AppState, Chain, ScheduledSession, ActiveSession, CompletionHistory } from './types';
-import { useAuth } from './hooks/useAuth';
-import { AuthModal } from './components/AuthModal';
-import { UserProfile } from './components/UserProfile';
-import { SyncManager } from './utils/syncManager';
 import { Dashboard } from './components/Dashboard';
 import { ChainEditor } from './components/ChainEditor';
 import { FocusMode } from './components/FocusMode';
@@ -13,12 +9,6 @@ import { storage } from './utils/storage';
 import { isSessionExpired } from './utils/time';
 
 function App() {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [syncManager, setSyncManager] = useState<SyncManager | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-
   const [state, setState] = useState<AppState>({
     chains: [],
     scheduledSessions: [],
@@ -31,29 +21,8 @@ function App() {
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
 
-  // Initialize sync manager when user changes
-  useEffect(() => {
-    if (user) {
-      const manager = new SyncManager(user.id);
-      setSyncManager(manager);
-      setLastSyncTime(manager.getLastSyncTime());
-    } else {
-      setSyncManager(null);
-      setLastSyncTime(null);
-    }
-  }, [user]);
-
-  // Auto-sync when user logs in
-  useEffect(() => {
-    if (user && syncManager && !isSyncing) {
-      handleSyncData();
-    }
-  }, [user, syncManager]);
-
   // Load data from localStorage on mount
   useEffect(() => {
-    if (authLoading) return;
-    
     const chains = storage.getChains();
     const scheduledSessions = storage.getScheduledSessions().filter(
       session => !isSessionExpired(session.expiresAt)
@@ -74,7 +43,7 @@ function App() {
     if (scheduledSessions.length !== storage.getScheduledSessions().length) {
       storage.saveScheduledSessions(scheduledSessions);
     }
-  }, [authLoading]);
+  }, []);
 
   // Clean up expired scheduled sessions periodically
   useEffect(() => {
@@ -101,68 +70,6 @@ function App() {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Sync data to cloud when authenticated
-  const syncToCloud = async () => {
-    if (!user || !syncManager) return;
-    
-    try {
-      await syncManager.syncToCloud({
-        chains: state.chains,
-        scheduledSessions: state.scheduledSessions,
-        activeSession: state.activeSession,
-        completionHistory: state.completionHistory,
-      });
-      setLastSyncTime(new Date());
-    } catch (error) {
-      console.error('Sync to cloud failed:', error);
-    }
-  };
-
-  const handleSyncData = async () => {
-    if (!user || !syncManager || isSyncing) return;
-    
-    setIsSyncing(true);
-    try {
-      const syncedData = await syncManager.mergeAndSync({
-        chains: state.chains,
-        scheduledSessions: state.scheduledSessions,
-        activeSession: state.activeSession,
-        completionHistory: state.completionHistory,
-      });
-      
-      setState(prev => ({
-        ...prev,
-        ...syncedData,
-        currentView: syncedData.activeSession ? 'focus' : prev.currentView,
-      }));
-      
-      setLastSyncTime(new Date());
-    } catch (error) {
-      console.error('Sync failed:', error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleSignOut = () => {
-    // Clear local state
-    setState({
-      chains: [],
-      scheduledSessions: [],
-      activeSession: null,
-      currentView: 'dashboard',
-      editingChain: null,
-      viewingChainId: null,
-      completionHistory: [],
-    });
-    
-    // Clear local storage
-    storage.saveChains([]);
-    storage.saveScheduledSessions([]);
-    storage.saveActiveSession(null);
-    storage.saveCompletionHistory([]);
-  };
 
   const handleCreateChain = () => {
     setState(prev => ({
@@ -211,11 +118,6 @@ function App() {
       
       storage.saveChains(updatedChains);
       
-      // Sync to cloud if authenticated
-      if (user && syncManager) {
-        syncToCloud();
-      }
-      
       return {
         ...prev,
         chains: updatedChains,
@@ -258,11 +160,6 @@ function App() {
         chains: updatedChains
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handleStartChain = (chainId: string) => {
@@ -293,11 +190,6 @@ function App() {
         currentView: 'focus',
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handleCompleteSession = () => {
@@ -339,11 +231,6 @@ function App() {
         currentView: 'dashboard',
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handleInterruptSession = (reason?: string) => {
@@ -385,11 +272,6 @@ function App() {
         currentView: 'dashboard',
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handlePauseSession = () => {
@@ -460,11 +342,6 @@ function App() {
     });
     
     setShowAuxiliaryJudgment(null);
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handleAuxiliaryJudgmentAllow = (chainId: string, exceptionRule: string) => {
@@ -494,11 +371,6 @@ function App() {
     });
     
     setShowAuxiliaryJudgment(null);
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
 
   const handleCancelScheduledSession = (chainId: string) => {
@@ -525,13 +397,7 @@ function App() {
         chains: updatedChains,
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
-  
   const handleViewChainDetail = (chainId: string) => {
     setState(prev => ({
       ...prev,
@@ -587,26 +453,7 @@ function App() {
         viewingChainId: prev.viewingChainId === chainId ? null : prev.viewingChainId,
       };
     });
-    
-    // Sync to cloud if authenticated
-    if (user && syncManager) {
-      syncToCloud();
-    }
   };
-
-  // Show loading screen while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-xl animate-pulse">
-            <i className="fas fa-rocket text-white text-xl"></i>
-          </div>
-          <p className="text-gray-600 dark:text-slate-400 font-chinese">正在加载...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Render current view
   switch (state.currentView) {
@@ -618,12 +465,6 @@ function App() {
             isEditing={!!state.editingChain}
             onSave={handleSaveChain}
             onCancel={handleBackToDashboard}
-          />
-          {/* Auth Modal */}
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => setShowAuthModal(false)}
           />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
@@ -653,12 +494,6 @@ function App() {
             onPause={handlePauseSession}
             onResume={handleResumeSession}
           />
-          {/* Auth Modal */}
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => setShowAuthModal(false)}
-          />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
               chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
@@ -685,12 +520,6 @@ function App() {
             onEdit={() => handleEditChain(viewingChain.id)}
             onDelete={() => handleDeleteChain(viewingChain.id)}
           />
-          {/* Auth Modal */}
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => setShowAuthModal(false)}
-          />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
               chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
@@ -708,24 +537,12 @@ function App() {
           <Dashboard
             chains={state.chains}
             scheduledSessions={state.scheduledSessions}
-            user={user}
-            onShowAuth={() => setShowAuthModal(true)}
-            onSignOut={handleSignOut}
-            onSyncData={handleSyncData}
-            isSyncing={isSyncing}
-            lastSyncTime={lastSyncTime}
             onCreateChain={handleCreateChain}
             onStartChain={handleStartChain}
             onScheduleChain={handleScheduleChain}
             onViewChainDetail={handleViewChainDetail}
             onCancelScheduledSession={handleCancelScheduledSession}
             onDeleteChain={handleDeleteChain}
-          />
-          {/* Auth Modal */}
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => setShowAuthModal(false)}
           />
           {showAuxiliaryJudgment && (
             <AuxiliaryJudgment
