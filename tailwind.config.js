@@ -1,28 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         primary: {
           50: '#f0f0ff',
           100: '#e5e5ff',
-          500: '#5751D5',
-          600: '#4c46c4',
-          700: '#413bb3',
-          800: '#36309f',
-          900: '#2b258b',
+          200: '#d1d1ff',
+          300: '#b8b8ff',
+          400: '#9999ff',
+          500: '#6366F1',
+          600: '#5B21B6',
+          700: '#7C3AED',
+          800: '#6D28D9',
+          900: '#581C87',
         },
-        dark: {
-          50: '#f8f8f8',
-          100: '#f0f0f0',
-          500: '#161615',
-          600: '#141413',
-          700: '#121211',
-          800: '#0f0f0e',
-          900: '#0d0d0c',
-        },
-        background: '#FDFDFD',
       },
       fontFamily: {
         sans: ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
@@ -37,6 +31,10 @@ export default {
       },
       backdropBlur: {
         xs: '2px',
+      },
+      screens: {
+        'reduce-motion': { 'raw': '(prefers-reduced-motion: reduce)' },
+        'high-contrast': { 'raw': '(prefers-contrast: high)' },
       },
     },
   },

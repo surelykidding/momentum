@@ -95,13 +95,13 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 pr-4">
-            <h3 className="text-2xl font-bold font-chinese text-[#161615] mb-2 group-hover:text-primary-500 transition-colors">
+            <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100 mb-2 group-hover:text-primary-500 transition-colors">
               {chain.name}
             </h3>
-            <p className="text-gray-500 text-sm mb-3 font-mono tracking-wide">
+            <p className="text-gray-600 dark:text-slate-400 text-sm mb-3 font-mono tracking-wide">
               {chain.trigger}
             </p>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <p className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed">
               {chain.description}
             </p>
           </div>
@@ -109,46 +109,46 @@ export const ChainCard: React.FC<ChainCardProps> = ({
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 border border-primary-200/50">
+          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 dark:from-primary-500/20 dark:to-primary-600/10 border border-primary-200/50 dark:border-primary-400/30">
             <div className="flex items-center justify-center space-x-2 text-primary-500 mb-2">
               <i className="fas fa-fire text-lg"></i>
               <span className="text-3xl font-bold font-mono">#{chain.currentStreak}</span>
             </div>
-            <div className="text-xs font-chinese text-gray-500 font-medium">主链记录</div>
+            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">主链记录</div>
           </div>
-          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-200/50">
+          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 border border-blue-200/50 dark:border-blue-400/30">
             <div className="flex items-center justify-center space-x-2 text-blue-500 mb-2">
               <i className="fas fa-calendar-alt text-lg"></i>
               <span className="text-3xl font-bold font-mono">#{chain.auxiliaryStreak}</span>
             </div>
-            <div className="text-xs font-chinese text-gray-500 font-medium">预约链记录</div>
+            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">预约链记录</div>
           </div>
         </div>
 
         {/* Duration and completions */}
-        <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-gray-50">
-          <div className="flex items-center space-x-2 text-gray-600">
+        <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
+          <div className="flex items-center space-x-2 text-gray-700 dark:text-slate-300">
             <Clock size={16} />
             <span className="font-medium">{formatTime(chain.duration)}</span>
           </div>
-          <div className="text-gray-500 text-sm font-mono">
+          <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
             {chain.totalCompletions} completions
           </div>
         </div>
 
         {/* Scheduled session */}
         {isScheduled && (
-          <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/5 rounded-2xl p-4 mb-6 border border-blue-200/50">
+          <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 rounded-2xl p-4 mb-6 border border-blue-200/50 dark:border-blue-400/30">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2 text-blue-600">
                 <i className="fas fa-bell text-sm"></i>
                 <span className="text-sm font-chinese font-medium">预约信号: {scheduledSession.auxiliarySignal}</span>
               </div>
-              <div className="text-blue-700 font-mono font-bold text-lg">
+              <div className="text-blue-700 dark:text-blue-400 font-mono font-bold text-lg">
                 {formatDuration(timeRemaining)}
               </div>
             </div>
-            <div className="text-blue-600 text-xs mb-3 font-chinese">
+            <div className="text-blue-600 dark:text-blue-400 text-xs mb-3 font-chinese">
               请在时间结束前完成: {chain.auxiliaryCompletionTrigger}
             </div>
             <button
@@ -156,7 +156,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
                 e.stopPropagation();
                 onCancelScheduledSession?.(chain.id);
               }}
-              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 px-3 py-3 rounded-xl text-sm transition-colors duration-200 flex items-center justify-center space-x-2 border border-red-200/50"
+              className="w-full bg-red-500/10 hover:bg-red-500/20 dark:bg-red-500/20 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 px-3 py-3 rounded-xl text-sm transition-colors duration-200 flex items-center justify-center space-x-2 border border-red-200/50 dark:border-red-400/30"
             >
               <i className="fas fa-exclamation-triangle"></i>
               <span className="font-chinese font-medium">中断/规则判定</span>
@@ -168,7 +168,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onStartChain(chain.id)}
-            className="flex-1 gradient-primary hover:shadow-lg text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105"
+            className="flex-1 gradient-primary hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
           >
             <Play size={16} />
             <span className="font-chinese font-semibold">开始任务</span>
@@ -177,7 +177,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           {!isScheduled && (
             <button
               onClick={() => onScheduleChain(chain.id)}
-              className="flex-1 gradient-dark hover:shadow-lg text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105"
+              className="flex-1 gradient-dark hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
             >
               <i className="fas fa-clock"></i>
               <span className="font-chinese font-semibold">预约</span>
