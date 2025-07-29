@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, LogOut, Cloud, Smartphone, Monitor, Sync, Settings } from 'lucide-react';
+import { User, LogOut, Cloud, Smartphone, Monitor, FolderSync as Sync, Settings } from 'lucide-react';
 import { auth } from '../lib/supabase';
 
 interface UserProfileProps {
