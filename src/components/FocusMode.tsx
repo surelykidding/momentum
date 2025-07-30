@@ -76,7 +76,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       if (!useExistingRule && !chain.exceptions.includes(ruleToAdd)) {
         onAddException(ruleToAdd);
       }
-      onComplete(); // 允许完成任务
+      // 不调用 onComplete()，允许继续当前会话
     }
     setShowInterruptWarning(false);
   };
