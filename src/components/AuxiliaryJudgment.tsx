@@ -54,7 +54,7 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full border border-gray-200 dark:border-slate-600 shadow-2xl animate-scale-in">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-slate-600 shadow-2xl animate-scale-in">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-4 mb-6">
             <div className="w-16 h-16 rounded-3xl bg-blue-500/10 flex items-center justify-center">
@@ -138,7 +138,7 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
                 onChange={(e) => setSelectedExistingRule(e.target.value)}
                 className="w-full bg-white dark:bg-slate-700 border border-green-300 dark:border-green-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
               >
-                {chain.auxiliaryExceptions.map((exception, index) => (
+                {[...new Set(chain.auxiliaryExceptions)].map((exception, index) => (
                   <option key={index} value={exception} className="bg-white dark:bg-slate-700">
                     {exception}
                   </option>
@@ -177,10 +177,10 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <button
             onClick={() => onJudgmentFailure(reason || '用户主动中断预约')}
-            className="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 shadow-lg font-chinese"
+            className="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:scale-105 shadow-lg font-chinese"
           >
             <div className="text-left">
               <div className="font-bold text-lg">判定失败</div>
@@ -193,7 +193,7 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
           <button
             onClick={handleJudgmentAllowClick}
             disabled={useExistingRule ? !selectedExistingRule : !reason.trim()}
-            className={`w-full px-6 py-4 rounded-2xl font-medium transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed text-white hover:scale-105 shadow-lg font-chinese ${
+            className={`w-full px-6 py-3 rounded-2xl font-medium transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed text-white hover:scale-105 shadow-lg font-chinese ${
               useExistingRule 
                 ? 'bg-green-500 hover:bg-green-600' 
                 : 'bg-yellow-500 hover:bg-yellow-600'
@@ -212,20 +212,20 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
           
           <button
             onClick={onCancel}
-            className="w-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-slate-100 px-4 py-3 rounded-2xl font-medium transition-all duration-300 hover:scale-105 font-chinese"
+            className="w-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-slate-100 px-4 py-2 rounded-2xl font-medium transition-all duration-300 hover:scale-105 font-chinese"
           >
             取消 - 继续预约
           </button>
         </div>
         
         {chain.auxiliaryExceptions && chain.auxiliaryExceptions.length > 0 && (
-          <div className="mt-8 p-6 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-200 dark:border-slate-600">
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-200 dark:border-slate-600">
             <h4 className="text-gray-900 dark:text-slate-100 font-medium mb-4 flex items-center space-x-2 font-chinese">
               <i className="fas fa-list text-blue-500"></i>
               <span>当前辅助链例外规则：</span>
             </h4>
             <div className="space-y-2">
-              {chain.auxiliaryExceptions.map((exception, index) => (
+              {[...new Set(chain.auxiliaryExceptions)].map((exception, index) => (
                 <div key={index} className="text-blue-600 dark:text-blue-400 text-sm flex items-center space-x-2">
                   <i className="fas fa-check-circle text-xs"></i>
                   <span className="font-chinese">{exception}</span>
