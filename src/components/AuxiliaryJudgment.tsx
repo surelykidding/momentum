@@ -224,7 +224,7 @@ export const AuxiliaryJudgment: React.FC<AuxiliaryJudgmentProps> = ({
               <i className="fas fa-list text-blue-500"></i>
               <span>当前辅助链例外规则：</span>
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-32 overflow-y-auto">
               {[...new Set(chain.auxiliaryExceptions)].map((exception, index) => (
                 <div key={index} className="text-blue-600 dark:text-blue-400 text-sm flex items-center space-x-2">
                   <i className="fas fa-check-circle text-xs"></i>

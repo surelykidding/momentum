@@ -323,7 +323,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                   <i className="fas fa-list text-primary-500"></i>
                   <span>当前例外规则：</span>
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-32 overflow-y-auto">
                   {chain.exceptions.map((exception, index) => (
                     <div key={index} className="text-yellow-600 dark:text-yellow-300 text-sm flex items-center space-x-2">
                       <i className="fas fa-check-circle text-xs"></i>
