@@ -34,12 +34,12 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="p-3 text-gray-400 hover:text-[#161615] dark:hover:text-slate-200 transition-colors rounded-2xl hover:bg-white/50 dark:hover:bg-slate-700/50"
+              className="p-3 text-gray-400 hover:text-[#161615] transition-colors rounded-2xl hover:bg-white/50"
             >
               <ArrowLeft size={24} />
             </button>
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-2">{chain.name}</h1>
+              <h1 className="text-4xl md:text-5xl font-bold font-chinese text-[#161615] mb-2">{chain.name}</h1>
               <p className="text-sm font-mono text-gray-500 tracking-wider uppercase">CHAIN DETAILS</p>
             </div>
           </div>
@@ -92,39 +92,39 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">触发动作</span>
-                  <span className="text-[#161615] dark:text-slate-100 font-medium font-chinese">{chain.trigger}</span>
+                  <span className="text-gray-500 font-chinese">触发动作</span>
+                  <span className="text-[#161615] font-medium font-chinese">{chain.trigger}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">任务时长</span>
-                  <span className="text-[#161615] dark:text-slate-100 font-medium font-mono">{formatTime(chain.duration)}</span>
+                  <span className="text-gray-500 font-chinese">任务时长</span>
+                  <span className="text-[#161615] font-medium font-mono">{formatTime(chain.duration)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">总完成次数</span>
+                  <span className="text-gray-500 font-chinese">总完成次数</span>
                   <span className="text-green-500 font-bold font-mono">{chain.totalCompletions}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">失败次数</span>
+                  <span className="text-gray-500 font-chinese">失败次数</span>
                   <span className="text-red-500 font-bold font-mono">{chain.totalFailures}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">预约链失败</span>
+                  <span className="text-gray-500 font-chinese">预约链失败</span>
                   <span className="text-red-500 font-bold font-mono">{chain.auxiliaryFailures}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">预约信号</span>
+                  <span className="text-gray-500 font-chinese">预约信号</span>
                   <span className="text-blue-500 font-medium font-chinese">{chain.auxiliarySignal}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">预约时长</span>
+                  <span className="text-gray-500 font-chinese">预约时长</span>
                   <span className="text-blue-500 font-medium font-mono">{chain.auxiliaryDuration}分钟</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">预约完成条件</span>
+                  <span className="text-gray-500 font-chinese">预约完成条件</span>
                   <span className="text-blue-500 font-medium font-chinese">{chain.auxiliaryCompletionTrigger}</span>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                  <span className="text-gray-500 dark:text-slate-400 font-chinese">成功率</span>
+                  <span className="text-gray-500 font-chinese">成功率</span>
                   <span className="text-primary-500 font-bold text-xl font-mono">{successRate}%</span>
                 </div>
               </div>
@@ -133,26 +133,26 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
             {/* Exceptions */}
             {(chain.exceptions.length > 0 || chain.auxiliaryExceptions.length > 0) && (
               <div className="bento-card animate-scale-in">
-                <h3 className="text-xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-6 flex items-center space-x-3">
+                <h3 className="text-xl font-bold font-chinese text-[#161615] mb-6 flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center">
                     <AlertCircle size={20} className="text-yellow-500" />
                   </div>
                   <div>
                     <span>规则手册</span>
-                    <p className="text-xs font-mono text-gray-500 dark:text-slate-400 tracking-wide">RULE HANDBOOK</p>
+                    <p className="text-xs font-mono text-gray-500 tracking-wide">RULE HANDBOOK</p>
                   </div>
                 </h3>
                 
                 {chain.exceptions.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="text-[#161615] dark:text-slate-100 font-medium mb-3 font-chinese flex items-center space-x-2">
+                    <h4 className="text-[#161615] font-medium mb-3 font-chinese flex items-center space-x-2">
                       <i className="fas fa-fire text-primary-500"></i>
                       <span>主链例外规则：</span>
                     </h4>
                     <div className="space-y-3">
                       {chain.exceptions.map((exception, index) => (
-                        <div key={index} className="bg-yellow-500/10 dark:bg-yellow-500/20 rounded-2xl p-4 border border-yellow-500/20 dark:border-yellow-500/30">
-                          <p className="text-yellow-700 dark:text-yellow-300 text-sm font-chinese">{exception}</p>
+                        <div key={index} className="bg-yellow-500/10 rounded-2xl p-4 border border-yellow-500/20">
+                          <p className="text-yellow-700 text-sm font-chinese">{exception}</p>
                         </div>
                       ))}
                     </div>
@@ -161,14 +161,14 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
                 
                 {chain.auxiliaryExceptions.length > 0 && (
                   <div>
-                    <h4 className="text-[#161615] dark:text-slate-100 font-medium mb-3 font-chinese flex items-center space-x-2">
+                    <h4 className="text-[#161615] font-medium mb-3 font-chinese flex items-center space-x-2">
                       <i className="fas fa-calendar-alt text-blue-500"></i>
                       <span>预约链例外规则：</span>
                     </h4>
                     <div className="space-y-3">
                       {chain.auxiliaryExceptions.map((exception, index) => (
-                        <div key={index} className="bg-blue-500/10 dark:bg-blue-500/20 rounded-2xl p-4 border border-blue-500/20 dark:border-blue-500/30">
-                          <p className="text-blue-700 dark:text-blue-300 text-sm font-chinese">{exception}</p>
+                        <div key={index} className="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/20">
+                          <p className="text-blue-700 text-sm font-chinese">{exception}</p>
                         </div>
                       ))}
                     </div>
@@ -182,42 +182,42 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
           <div className="xl:col-span-2 space-y-6">
             {/* Description */}
             <div className="bento-card animate-scale-in">
-              <h3 className="text-xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-6 flex items-center space-x-3">
+              <h3 className="text-xl font-bold font-chinese text-[#161615] mb-6 flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-2xl bg-gray-500/10 flex items-center justify-center">
                   <i className="fas fa-align-left text-gray-500"></i>
                 </div>
                 <div>
                   <span>任务描述</span>
-                  <p className="text-xs font-mono text-gray-500 dark:text-slate-400 tracking-wide">TASK DESCRIPTION</p>
+                  <p className="text-xs font-mono text-gray-500 tracking-wide">TASK DESCRIPTION</p>
                 </div>
               </h3>
-              <p className="text-gray-700 dark:text-slate-300 leading-relaxed font-chinese text-lg">{chain.description}</p>
+              <p className="text-gray-700 leading-relaxed font-chinese text-lg">{chain.description}</p>
             </div>
 
             {/* History */}
             <div className="bento-card animate-scale-in">
-              <h3 className="text-xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-6 flex items-center space-x-3">
+              <h3 className="text-xl font-bold font-chinese text-[#161615] mb-6 flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-2xl bg-primary-500/10 flex items-center justify-center">
                   <Calendar size={20} className="text-primary-500" />
                 </div>
                 <div>
                   <span>最近记录</span>
-                  <p className="text-xs font-mono text-gray-500 dark:text-slate-400 tracking-wide">RECENT HISTORY</p>
+                  <p className="text-xs font-mono text-gray-500 tracking-wide">RECENT HISTORY</p>
                 </div>
               </h3>
 
               {recentHistory.length === 0 ? (
-                <div className="text-center py-16 text-gray-500 dark:text-slate-400">
+                <div className="text-center py-16 text-gray-500">
                   <div className="w-20 h-20 rounded-3xl bg-gray-100 flex items-center justify-center mx-auto mb-6">
                     <Calendar size={32} className="text-gray-400" />
                   </div>
                   <p className="font-chinese text-lg">还没有完成记录</p>
-                  <p className="text-sm font-mono text-gray-400 dark:text-slate-500 mt-2">NO COMPLETION RECORDS YET</p>
+                  <p className="text-sm font-mono text-gray-400 mt-2">NO COMPLETION RECORDS YET</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {recentHistory.map((record, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200">
+                    <div key={index} className="flex items-center justify-between bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors duration-200">
                       <div className="flex items-center space-x-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
                           record.wasSuccessful 
@@ -231,19 +231,19 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
                           )}
                         </div>
                         <div>
-                          <p className="text-[#161615] dark:text-slate-100 font-medium font-chinese text-lg">
+                          <p className="text-[#161615] font-medium font-chinese text-lg">
                             {record.wasSuccessful ? '任务完成' : '任务失败'}
                           </p>
                           {!record.wasSuccessful && record.reasonForFailure && (
-                            <p className="text-red-500 dark:text-red-400 text-sm font-chinese mt-1">{record.reasonForFailure}</p>
+                            <p className="text-red-500 text-sm font-chinese mt-1">{record.reasonForFailure}</p>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-500 dark:text-slate-400 text-sm font-mono mb-1">
+                        <p className="text-gray-500 text-sm font-mono mb-1">
                           {record.completedAt.toLocaleDateString('zh-CN')}
                         </p>
-                        <div className="flex items-center space-x-2 text-gray-400 dark:text-slate-500 text-sm">
+                        <div className="flex items-center space-x-2 text-gray-400 text-sm">
                           <Clock size={14} />
                           <span className="font-mono">{formatTime(record.duration)}</span>
                         </div>
@@ -272,11 +272,11 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
               
               <div className="bg-red-50 rounded-3xl p-8 border border-red-200 mb-8">
                 <div className="text-center mb-6">
-                  <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-2 font-chinese">
+                  <p className="text-red-600 text-sm font-medium mb-2 font-chinese">
                     ⚠️ 此操作将永久删除以下数据：
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-red-600 dark:text-red-400 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-red-600 text-sm">
                   <div className="bg-white rounded-2xl p-6 border border-red-200">
                     <div className="font-medium mb-4 flex items-center font-chinese">
                       <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center mr-3">
@@ -335,7 +335,7 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-[#161615] dark:text-slate-100 px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center hover:scale-105 font-chinese"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-[#161615] px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center hover:scale-105 font-chinese"
                 >
                   取消
                 </button>

@@ -60,17 +60,13 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     if (!name.trim() || !trigger.trim() || !description.trim() || 
         !auxiliarySignal.trim() || !auxiliaryCompletionTrigger.trim()) return;
 
-    // 如果时长为0（空值状态），使用默认值
-    const finalDuration = duration === 0 ? 45 : duration;
-    const finalAuxiliaryDuration = auxiliaryDuration === 0 ? 15 : auxiliaryDuration;
-
     onSave({
       name: name.trim(),
       trigger: trigger === '自定义触发器' ? customTrigger.trim() : trigger,
-      duration: finalDuration,
+      duration,
       description: description.trim(),
       auxiliarySignal: auxiliarySignal === '自定义信号' ? customAuxiliarySignal.trim() : auxiliarySignal,
-      auxiliaryDuration: finalAuxiliaryDuration,
+      auxiliaryDuration,
       auxiliaryCompletionTrigger: auxiliaryCompletionTrigger.trim(),
       exceptions: chain?.exceptions || [],
       auxiliaryExceptions: chain?.auxiliaryExceptions || [],
@@ -105,7 +101,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
             <ArrowLeft size={24} />
           </button>
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-2">
+            <h1 className="text-4xl md:text-5xl font-bold font-chinese text-[#161615] mb-2">
               {isEditing ? '编辑链条' : '创建新链条'}
             </h1>
             <p className="text-sm font-mono text-gray-500 tracking-wider uppercase">
@@ -122,7 +118,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <i className="fas fa-tag text-primary-500"></i>
               </div>
               <div>
-                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">链名称</h3>
+                <h3 className="text-xl font-bold font-chinese text-[#161615]">链名称</h3>
                 <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN NAME</p>
               </div>
             </div>
@@ -131,7 +127,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="例如：学习Python、健身30分钟、无干扰写作"
-              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
               required
             />
           </div>
@@ -144,7 +140,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <i className="fas fa-fire text-primary-500"></i>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100">主链设置</h3>
+                  <h3 className="text-2xl font-bold font-chinese text-[#161615]">主链设置</h3>
                   <p className="text-sm font-mono text-gray-500 tracking-wide">MAIN CHAIN</p>
                 </div>
               </div>
@@ -154,21 +150,21 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-crown text-primary-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">神圣座位</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615]">神圣座位</h4>
                     <p className="text-xs font-mono text-gray-500">SACRED SEAT TRIGGER</p>
                   </div>
                 </div>
                 <select
                   value={trigger}
                   onChange={(e) => handleTriggerSelect(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
                   required
                 >
                   <option value="" disabled className="text-gray-400">
                     选择触发动作
                   </option>
                   {TRIGGER_TEMPLATES.map((template, index) => (
-                    <option key={index} value={template.text} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
+                    <option key={index} value={template.text} className="text-[#161615]">
                       {template.text}
                     </option>
                   ))}
@@ -179,7 +175,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                     value={customTrigger}
                     onChange={(e) => setCustomTrigger(e.target.value)}
                     placeholder="输入你的自定义触发动作"
-                    className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
                     required
                   />
                 )}
@@ -190,7 +186,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <Clock className="text-primary-500" size={20} />
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">任务时长</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615]">任务时长</h4>
                     <p className="text-xs font-mono text-gray-500">TASK DURATION</p>
                   </div>
                 </div>
@@ -205,64 +201,27 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       setDuration(Number(e.target.value));
                     }
                   }}
-                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
                   required
                 >
                   {DURATION_PRESETS.map((preset) => (
-                    <option key={preset} value={preset} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
+                    <option key={preset} value={preset} className="text-[#161615]">
                       {preset}分钟
                     </option>
                   ))}
-                  <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
+                  <option value="custom" className="text-[#161615]">自定义时长</option>
                 </select>
                 {isCustomDuration && (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="300"
-                        value={duration}
-                        onChange={(e) => setDuration(Number(e.target.value))}
-                        className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                        style={{
-                          background: `linear-gradient(to right, #6366F1 0%, #6366F1 ${((duration - 1) / 299) * 100}%, #E5E7EB ${((duration - 1) / 299) * 100}%, #E5E7EB 100%)`
-                        }}
-                      />
-                      <span className="text-primary-500 font-mono font-semibold min-w-[60px] text-right">
-                        {duration}分钟
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="300"
-                        value={duration === 0 ? '' : duration}
-                        onChange={(e) => {
-                          if (e.target.value === '') {
-                            setDuration(0); // 使用0表示空值状态
-                            return;
-                          }
-                          const value = parseInt(e.target.value);
-                          if (isNaN(value)) {
-                            return; // 忽略非数字输入
-                          }
-                          if (value >= 1 && value <= 300) {
-                            setDuration(value);
-                          } else if (value < 1) {
-                            setDuration(1);
-                          } else if (value > 300) {
-                            setDuration(300);
-                          }
-                        }}
-                        className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 w-20 text-center font-mono"
-                      />
-                      <span className="text-gray-500 dark:text-slate-400 font-chinese text-sm">分钟</span>
-                    </div>
-                  </div>
+                  <input
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    placeholder="输入自定义时长（分钟）"
+                    min="1"
+                    max="300"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
+                    required
+                  />
                 )}
               </div>
             </div>
@@ -274,7 +233,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <i className="fas fa-calendar-alt text-blue-500"></i>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100">辅助链设置</h3>
+                  <h3 className="text-2xl font-bold font-chinese text-[#161615]">辅助链设置</h3>
                   <p className="text-sm font-mono text-gray-500 tracking-wide">AUXILIARY CHAIN</p>
                 </div>
               </div>
@@ -284,21 +243,21 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-bell text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">预约信号</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约信号</h4>
                     <p className="text-xs font-mono text-gray-500">BOOKING SIGNAL</p>
                   </div>
                 </div>
                 <select
                   value={auxiliarySignal}
                   onChange={(e) => handleAuxiliarySignalSelect(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
                   required
                 >
                   <option value="" disabled className="text-gray-400">
                     选择预约信号
                   </option>
                   {AUXILIARY_SIGNAL_TEMPLATES.map((template, index) => (
-                    <option key={index} value={template.text} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
+                    <option key={index} value={template.text} className="text-[#161615]">
                       {template.text}
                     </option>
                   ))}
@@ -309,7 +268,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                     value={customAuxiliarySignal}
                     onChange={(e) => setCustomAuxiliarySignal(e.target.value)}
                     placeholder="输入你的自定义预约信号"
-                    className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
                     required
                   />
                 )}
@@ -320,7 +279,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-hourglass-half text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">预约时长</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约时长</h4>
                     <p className="text-xs font-mono text-gray-500">BOOKING DURATION</p>
                   </div>
                 </div>
@@ -335,64 +294,27 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       setAuxiliaryDuration(Number(e.target.value));
                     }
                   }}
-                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
                   required
                 >
                   {AUXILIARY_DURATION_PRESETS.map((preset) => (
-                    <option key={preset} value={preset} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
+                    <option key={preset} value={preset} className="text-[#161615]">
                       {preset}分钟
                     </option>
                   ))}
-                  <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
+                  <option value="custom" className="text-[#161615]">自定义时长</option>
                 </select>
                 {isCustomAuxiliaryDuration && (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="120"
-                        value={auxiliaryDuration}
-                        onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
-                        className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                        style={{
-                          background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB 100%)`
-                        }}
-                      />
-                      <span className="text-blue-500 font-mono font-semibold min-w-[60px] text-right">
-                        {auxiliaryDuration}分钟
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="120"
-                        value={auxiliaryDuration === 0 ? '' : auxiliaryDuration}
-                        onChange={(e) => {
-                          if (e.target.value === '') {
-                            setAuxiliaryDuration(0); // 使用0表示空值状态
-                            return;
-                          }
-                          const value = parseInt(e.target.value);
-                          if (isNaN(value)) {
-                            return; // 忽略非数字输入
-                          }
-                          if (value >= 1 && value <= 120) {
-                            setAuxiliaryDuration(value);
-                          } else if (value < 1) {
-                            setAuxiliaryDuration(1);
-                          } else if (value > 120) {
-                            setAuxiliaryDuration(120);
-                          }
-                        }}
-                        className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 w-20 text-center font-mono"
-                      />
-                      <span className="text-gray-500 dark:text-slate-400 font-chinese text-sm">分钟</span>
-                    </div>
-                  </div>
+                  <input
+                    type="number"
+                    value={auxiliaryDuration}
+                    onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
+                    placeholder="输入自定义时长（分钟）"
+                    min="1"
+                    max="120"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
+                    required
+                  />
                 )}
               </div>
 
@@ -401,7 +323,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-check-circle text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">预约完成条件</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约完成条件</h4>
                     <p className="text-xs font-mono text-gray-500">COMPLETION CONDITION</p>
                   </div>
                 </div>
@@ -410,7 +332,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   value={auxiliaryCompletionTrigger}
                   onChange={(e) => setAuxiliaryCompletionTrigger(e.target.value)}
                   placeholder="例如：打开编程软件、坐到书房书桌前"
-                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
                   required
                 />
                 <p className="text-gray-500 text-xs mt-3 leading-relaxed">
@@ -427,7 +349,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <i className="fas fa-align-left text-gray-500"></i>
               </div>
               <div>
-                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">任务描述</h3>
+                <h3 className="text-xl font-bold font-chinese text-[#161615]">任务描述</h3>
                 <p className="text-sm font-mono text-gray-500 tracking-wide">TASK DESCRIPTION</p>
               </div>
             </div>
@@ -436,7 +358,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="具体要做什么？例如：完成CS61A项目的第一部分"
               rows={4}
-              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 resize-none font-chinese leading-relaxed"
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-[#161615] placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 resize-none font-chinese leading-relaxed"
               required
             />
           </div>
@@ -446,7 +368,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-slate-100 px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 hover:scale-105 font-chinese"
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-[#161615] px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 hover:scale-105 font-chinese"
             >
               <span>取消</span>
             </button>
