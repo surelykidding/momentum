@@ -8,7 +8,7 @@ import { ChainDetail } from './components/ChainDetail';
 import { AuxiliaryJudgment } from './components/AuxiliaryJudgment';
 import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
-import { getCurrentUser } from './lib/supabase';
+import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
 
 function App() {
@@ -26,31 +26,148 @@ function App() {
 
   // Determine which storage to use based on authentication
   const [storage, setStorage] = useState(localStorageUtils);
-  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
 
   // Check if user is authenticated and switch to Supabase storage
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await getCurrentUser();
-        if (user) {
-          setStorage(supabaseStorage);
-          setIsSupabaseReady(true);
-        } else {
-          setStorage(localStorageUtils);
-          setIsSupabaseReady(false);
+        // 只有在 Supabase 配置正确时才检查认证
+        if (isSupabaseConfigured) {
+          const user = await getCurrentUser();
+          if (user) {
+            setStorage(supabaseStorage);
+            return;
+          }
         }
-      } catch (error) {
-        console.error('Auth check failed:', error);
+        
+        // 回退到本地存储
         setStorage(localStorageUtils);
-        setIsSupabaseReady(false);
+      } catch (error) {
+        console.warn('Supabase not available, using localStorage:', error);
+        setStorage(localStorageUtils);
       }
     };
 
     checkAuth();
   }, []);
 
-  // Load data from localStorage on mount
+  const renderContent = () => {
+    if (!isSupabaseConfigured) {
+      // 没有 Supabase 配置时，直接渲染内容，不需要认证
+      return renderCurrentView();
+    }
+    
+    // 有 Supabase 配置时，使用认证包装
+    return (
+      <AuthWrapper>
+        {renderCurrentView()}
+      </AuthWrapper>
+    );
+  };
+
+  const renderCurrentView = () => {
+    switch (state.currentView) {
+      case 'editor':
+        return (
+          <>
+            <ChainEditor
+              chain={state.editingChain || undefined}
+              isEditing={!!state.editingChain}
+              onSave={handleSaveChain}
+              onCancel={handleBackToDashboard}
+            />
+            {showAuxiliaryJudgment && (
+              <AuxiliaryJudgment
+                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
+                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
+                onCancel={() => setShowAuxiliaryJudgment(null)}
+              />
+            )}
+          </>
+        );
+
+      case 'focus':
+        const activeChain = state.chains.find(c => c.id === state.activeSession?.chainId);
+        if (!state.activeSession || !activeChain) {
+          handleBackToDashboard();
+          return null;
+        }
+        return (
+          <>
+            <FocusMode
+              session={state.activeSession}
+              chain={activeChain}
+              onComplete={handleCompleteSession}
+              onInterrupt={handleInterruptSession}
+              onAddException={handleAddException}
+              onPause={handlePauseSession}
+              onResume={handleResumeSession}
+            />
+            {showAuxiliaryJudgment && (
+              <AuxiliaryJudgment
+                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
+                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
+                onCancel={() => setShowAuxiliaryJudgment(null)}
+              />
+            )}
+          </>
+        );
+
+      case 'detail':
+        const viewingChain = state.chains.find(c => c.id === state.viewingChainId);
+        if (!viewingChain) {
+          handleBackToDashboard();
+          return null;
+        }
+        return (
+          <>
+            <ChainDetail
+              chain={viewingChain}
+              history={state.completionHistory}
+              onBack={handleBackToDashboard}
+              onEdit={() => handleEditChain(viewingChain.id)}
+              onDelete={() => handleDeleteChain(viewingChain.id)}
+            />
+            {showAuxiliaryJudgment && (
+              <AuxiliaryJudgment
+                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
+                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
+                onCancel={() => setShowAuxiliaryJudgment(null)}
+              />
+            )}
+          </>
+        );
+
+      default:
+        return (
+          <>
+            <Dashboard
+              chains={state.chains}
+              scheduledSessions={state.scheduledSessions}
+              onCreateChain={handleCreateChain}
+              onStartChain={handleStartChain}
+              onScheduleChain={handleScheduleChain}
+              onViewChainDetail={handleViewChainDetail}
+              onCancelScheduledSession={handleCancelScheduledSession}
+              onDeleteChain={handleDeleteChain}
+            />
+            {showAuxiliaryJudgment && (
+              <AuxiliaryJudgment
+                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
+                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
+                onCancel={() => setShowAuxiliaryJudgment(null)}
+              />
+            )}
+          </>
+        );
+    }
+  };
+
+  // Load data from storage on mount
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -89,7 +206,6 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       setState(prev => {
-        const now = Date.now();
         const expiredSessions = prev.scheduledSessions.filter(
           session => isSessionExpired(session.expiresAt)
         );
@@ -109,7 +225,7 @@ function App() {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [storage]);
 
   const handleCreateChain = () => {
     setState(prev => ({
@@ -130,7 +246,7 @@ function App() {
     }
   };
 
-  const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'totalCompletions' | 'totalFailures' | 'createdAt' | 'lastCompletedAt'>) => {
+  const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => {
     setState(prev => {
       let updatedChains: Chain[];
       
@@ -438,6 +554,7 @@ function App() {
       };
     });
   };
+
   const handleViewChainDetail = (chainId: string) => {
     setState(prev => ({
       ...prev,
@@ -495,114 +612,7 @@ function App() {
     });
   };
 
-  // Render current view
-  switch (state.currentView) {
-    case 'editor':
-      return (
-        <AuthWrapper>
-        <>
-          <ChainEditor
-            chain={state.editingChain || undefined}
-            isEditing={!!state.editingChain}
-            onSave={handleSaveChain}
-            onCancel={handleBackToDashboard}
-          />
-          {showAuxiliaryJudgment && (
-            <AuxiliaryJudgment
-              chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-              onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
-              onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
-              onCancel={() => setShowAuxiliaryJudgment(null)}
-            />
-          )}
-        </>
-        </AuthWrapper>
-      );
-
-    case 'focus':
-      const activeChain = state.chains.find(c => c.id === state.activeSession?.chainId);
-      if (!state.activeSession || !activeChain) {
-        handleBackToDashboard();
-        return null;
-      }
-      return (
-        <AuthWrapper>
-        <>
-          <FocusMode
-            session={state.activeSession}
-            chain={activeChain}
-            onComplete={handleCompleteSession}
-            onInterrupt={handleInterruptSession}
-            onAddException={handleAddException}
-            onPause={handlePauseSession}
-            onResume={handleResumeSession}
-          />
-          {showAuxiliaryJudgment && (
-            <AuxiliaryJudgment
-              chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-              onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
-              onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
-              onCancel={() => setShowAuxiliaryJudgment(null)}
-            />
-          )}
-        </>
-        </AuthWrapper>
-      );
-
-    case 'detail':
-      const viewingChain = state.chains.find(c => c.id === state.viewingChainId);
-      if (!viewingChain) {
-        handleBackToDashboard();
-        return null;
-      }
-      return (
-        <AuthWrapper>
-        <>
-          <ChainDetail
-            chain={viewingChain}
-            history={state.completionHistory}
-            onBack={handleBackToDashboard}
-            onEdit={() => handleEditChain(viewingChain.id)}
-            onDelete={() => handleDeleteChain(viewingChain.id)}
-          />
-          {showAuxiliaryJudgment && (
-            <AuxiliaryJudgment
-              chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-              onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
-              onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
-              onCancel={() => setShowAuxiliaryJudgment(null)}
-            />
-          )}
-        </>
-        </AuthWrapper>
-      );
-
-    default:
-      return (
-        <AuthWrapper>
-        <>
-          <Dashboard
-            chains={state.chains}
-            scheduledSessions={state.scheduledSessions}
-            onCreateChain={handleCreateChain}
-            onStartChain={handleStartChain}
-            onScheduleChain={handleScheduleChain}
-            onViewChainDetail={handleViewChainDetail}
-            onCancelScheduledSession={handleCancelScheduledSession}
-            onDeleteChain={handleDeleteChain}
-          />
-          {showAuxiliaryJudgment && (
-            <AuxiliaryJudgment
-              chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-              onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
-              onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
-              onCancel={() => setShowAuxiliaryJudgment(null)}
-            />
-          )}
-        </>
-        </AuthWrapper>
-      );
-  }
+  return renderContent();
 }
 
 export default App;
