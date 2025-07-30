@@ -80,10 +80,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           </button>
           
           {showMenu && (
-            <div className="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-200 dark:border-slate-600 py-2 z-10 min-w-[140px]">
+            <div className="absolute right-0 top-12 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-10 min-w-[140px]">
               <button
                 onClick={handleDeleteClick}
-                className="w-full px-4 py-3 text-left text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
+                className="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50 flex items-center space-x-3 transition-colors"
               >
                 <i className="fas fa-trash text-sm"></i>
                 <span className="font-chinese font-medium">删除链条</span>
@@ -132,7 +132,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
             <span className="font-medium">{formatTime(chain.duration)}</span>
           </div>
           <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
-            {chain.totalCompletions} completion{(chain.totalCompletions === 0 || chain.totalCompletions === 1) ? '' : 's'}
+            {chain.totalCompletions} completions
           </div>
         </div>
 

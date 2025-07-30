@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { AppState, Chain, ScheduledSession, ActiveSession, CompletionHistory } from './types';
 import { Dashboard } from './components/Dashboard';
-import { AuthWrapper } from './components/AuthWrapper';
 import { ChainEditor } from './components/ChainEditor';
 import { FocusMode } from './components/FocusMode';
 import { ChainDetail } from './components/ChainDetail';
 import { AuxiliaryJudgment } from './components/AuxiliaryJudgment';
-import { storage as localStorageUtils } from './utils/storage';
-import { supabaseStorage } from './utils/supabaseStorage';
-import { getCurrentUser } from './lib/supabase';
+import { storage } from './utils/storage';
 import { isSessionExpired } from './utils/time';
 
 function App() {
@@ -24,66 +21,29 @@ function App() {
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
 
-  // Determine which storage to use based on authentication
-  const [storage, setStorage] = useState(localStorageUtils);
-  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
-
-  // Check if user is authenticated and switch to Supabase storage
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await getCurrentUser();
-        if (user) {
-          setStorage(supabaseStorage);
-          setIsSupabaseReady(true);
-        } else {
-          setStorage(localStorageUtils);
-          setIsSupabaseReady(false);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setStorage(localStorageUtils);
-        setIsSupabaseReady(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
   // Load data from localStorage on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const chains = await storage.getChains();
-        const allScheduledSessions = await storage.getScheduledSessions();
-        const scheduledSessions = allScheduledSessions.filter(
-          session => !isSessionExpired(session.expiresAt)
-        );
-        const activeSession = await storage.getActiveSession();
-        const completionHistory = await storage.getCompletionHistory();
+    const chains = storage.getChains();
+    const scheduledSessions = storage.getScheduledSessions().filter(
+      session => !isSessionExpired(session.expiresAt)
+    );
+    const activeSession = storage.getActiveSession();
+    const completionHistory = storage.getCompletionHistory();
 
-        setState(prev => ({
-          ...prev,
-          chains,
-          scheduledSessions,
-          activeSession,
-          completionHistory,
-          currentView: activeSession ? 'focus' : 'dashboard',
-        }));
+    setState(prev => ({
+      ...prev,
+      chains,
+      scheduledSessions,
+      activeSession,
+      completionHistory,
+      currentView: activeSession ? 'focus' : 'dashboard',
+    }));
 
-        // Clean up expired sessions
-        if (scheduledSessions.length !== allScheduledSessions.length) {
-          await storage.saveScheduledSessions(scheduledSessions);
-        }
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      }
-    };
-
-    if (storage) {
-      loadData();
+    // Clean up expired sessions
+    if (scheduledSessions.length !== storage.getScheduledSessions().length) {
+      storage.saveScheduledSessions(scheduledSessions);
     }
-  }, [storage]);
+  }, []);
 
   // Clean up expired scheduled sessions periodically
   useEffect(() => {
@@ -130,7 +90,7 @@ function App() {
     }
   };
 
-  const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'totalCompletions' | 'totalFailures' | 'createdAt' | 'lastCompletedAt'>) => {
+  const handleSaveChain = (chainData: Omit<Chain, 'id' | 'currentStreak' | 'totalCompletions' | 'totalFailures' | 'createdAt' | 'lastCompletedAt'>) => {
     setState(prev => {
       let updatedChains: Chain[];
       
@@ -499,7 +459,6 @@ function App() {
   switch (state.currentView) {
     case 'editor':
       return (
-        <AuthWrapper>
         <>
           <ChainEditor
             chain={state.editingChain || undefined}
@@ -516,7 +475,6 @@ function App() {
             />
           )}
         </>
-        </AuthWrapper>
       );
 
     case 'focus':
@@ -526,7 +484,6 @@ function App() {
         return null;
       }
       return (
-        <AuthWrapper>
         <>
           <FocusMode
             session={state.activeSession}
@@ -546,7 +503,6 @@ function App() {
             />
           )}
         </>
-        </AuthWrapper>
       );
 
     case 'detail':
@@ -556,7 +512,6 @@ function App() {
         return null;
       }
       return (
-        <AuthWrapper>
         <>
           <ChainDetail
             chain={viewingChain}
@@ -574,12 +529,10 @@ function App() {
             />
           )}
         </>
-        </AuthWrapper>
       );
 
     default:
       return (
-        <AuthWrapper>
         <>
           <Dashboard
             chains={state.chains}
@@ -600,7 +553,6 @@ function App() {
             />
           )}
         </>
-        </AuthWrapper>
       );
   }
 }
