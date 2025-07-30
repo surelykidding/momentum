@@ -118,7 +118,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <i className="fas fa-tag text-primary-500"></i>
               </div>
               <div>
-                <h3 className="text-xl font-bold font-chinese text-[#161615]">链名称</h3>
+                <h3 className="text-xl font-bold font-chinese text-[#161615] dark:text-slate-100">链名称</h3>
                 <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN NAME</p>
               </div>
             </div>
@@ -140,7 +140,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <i className="fas fa-fire text-primary-500"></i>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-chinese text-[#161615]">主链设置</h3>
+                  <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100">主链设置</h3>
                   <p className="text-sm font-mono text-gray-500 tracking-wide">MAIN CHAIN</p>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-crown text-primary-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-[#161615]">神圣座位</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615] dark:text-slate-100">神圣座位</h4>
                     <p className="text-xs font-mono text-gray-500">SACRED SEAT TRIGGER</p>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <Clock className="text-primary-500" size={20} />
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-[#161615]">任务时长</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615] dark:text-slate-100">任务时长</h4>
                     <p className="text-xs font-mono text-gray-500">TASK DURATION</p>
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <i className="fas fa-calendar-alt text-blue-500"></i>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-chinese text-[#161615]">辅助链设置</h3>
+                  <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100">辅助链设置</h3>
                   <p className="text-sm font-mono text-gray-500 tracking-wide">AUXILIARY CHAIN</p>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-bell text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约信号</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615] dark:text-slate-100">预约信号</h4>
                     <p className="text-xs font-mono text-gray-500">BOOKING SIGNAL</p>
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-hourglass-half text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约时长</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615] dark:text-slate-100">预约时长</h4>
                     <p className="text-xs font-mono text-gray-500">BOOKING DURATION</p>
                   </div>
                 </div>
@@ -323,7 +323,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <div className="flex items-center space-x-3 mb-4">
                   <i className="fas fa-check-circle text-blue-500"></i>
                   <div>
-                    <h4 className="text-lg font-bold font-chinese text-[#161615]">预约完成条件</h4>
+                    <h4 className="text-lg font-bold font-chinese text-[#161615] dark:text-slate-100">预约完成条件</h4>
                     <p className="text-xs font-mono text-gray-500">COMPLETION CONDITION</p>
                   </div>
                 </div>
@@ -349,7 +349,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 <i className="fas fa-align-left text-gray-500"></i>
               </div>
               <div>
-                <h3 className="text-xl font-bold font-chinese text-[#161615]">任务描述</h3>
+                <h3 className="text-xl font-bold font-chinese text-[#161615] dark:text-slate-100">任务描述</h3>
                 <p className="text-sm font-mono text-gray-500 tracking-wide">TASK DESCRIPTION</p>
               </div>
             </div>
