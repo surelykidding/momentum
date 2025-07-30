@@ -60,13 +60,17 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     if (!name.trim() || !trigger.trim() || !description.trim() || 
         !auxiliarySignal.trim() || !auxiliaryCompletionTrigger.trim()) return;
 
+    // 如果时长为0（空值状态），使用默认值
+    const finalDuration = duration === 0 ? 45 : duration;
+    const finalAuxiliaryDuration = auxiliaryDuration === 0 ? 15 : auxiliaryDuration;
+
     onSave({
       name: name.trim(),
       trigger: trigger === '自定义触发器' ? customTrigger.trim() : trigger,
-      duration,
+      duration: finalDuration,
       description: description.trim(),
       auxiliarySignal: auxiliarySignal === '自定义信号' ? customAuxiliarySignal.trim() : auxiliarySignal,
-      auxiliaryDuration,
+      auxiliaryDuration: finalAuxiliaryDuration,
       auxiliaryCompletionTrigger: auxiliaryCompletionTrigger.trim(),
       exceptions: chain?.exceptions || [],
       auxiliaryExceptions: chain?.auxiliaryExceptions || [],
@@ -236,12 +240,13 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                         type="number"
                         min="1"
                         max="300"
-                        value={duration}
+                        value={duration === 0 ? '' : duration}
                         onChange={(e) => {
-                          const value = parseInt(e.target.value);
                           if (e.target.value === '') {
-                            return; // 允许清空
+                            setDuration(0); // 使用0表示空值状态
+                            return;
                           }
+                          const value = parseInt(e.target.value);
                           if (isNaN(value)) {
                             return; // 忽略非数字输入
                           }
@@ -251,14 +256,6 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                             setDuration(1);
                           } else if (value > 300) {
                             setDuration(300);
-                          } else {
-                            setDuration(1);
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // 当失去焦点时，如果为空则设置为1
-                          if (e.target.value === '') {
-                            setDuration(1);
                           }
                         }}
                         className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 w-20 text-center font-mono"
@@ -373,12 +370,13 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                         type="number"
                         min="1"
                         max="120"
-                        value={auxiliaryDuration}
+                        value={auxiliaryDuration === 0 ? '' : auxiliaryDuration}
                         onChange={(e) => {
-                          const value = parseInt(e.target.value);
                           if (e.target.value === '') {
-                            return; // 允许清空
+                            setAuxiliaryDuration(0); // 使用0表示空值状态
+                            return;
                           }
+                          const value = parseInt(e.target.value);
                           if (isNaN(value)) {
                             return; // 忽略非数字输入
                           }
@@ -388,14 +386,6 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                             setAuxiliaryDuration(1);
                           } else if (value > 120) {
                             setAuxiliaryDuration(120);
-                          } else {
-                            setAuxiliaryDuration(1);
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // 当失去焦点时，如果为空则设置为1
-                          if (e.target.value === '') {
-                            setAuxiliaryDuration(1);
                           }
                         }}
                         className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 w-20 text-center font-mono"
