@@ -190,19 +190,21 @@ export class SupabaseStorage {
       .from('active_sessions')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .limit(1);
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       return null;
     }
 
+    const sessionData = data[0];
+
     return {
-      chainId: data.chain_id,
-      startedAt: new Date(data.started_at),
-      duration: data.duration,
-      isPaused: data.is_paused,
-      pausedAt: data.paused_at ? new Date(data.paused_at) : undefined,
-      totalPausedTime: data.total_paused_time,
+      chainId: sessionData.chain_id,
+      startedAt: new Date(sessionData.started_at),
+      duration: sessionData.duration,
+      isPaused: sessionData.is_paused,
+      pausedAt: sessionData.paused_at ? new Date(sessionData.paused_at) : undefined,
+      totalPausedTime: sessionData.total_paused_time,
     };
   }
 
