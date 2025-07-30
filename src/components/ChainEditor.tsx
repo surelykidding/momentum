@@ -212,16 +212,23 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
                 </select>
                 {isCustomDuration && (
-                  <input
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                    placeholder="输入自定义时长（分钟）"
-                    min="1"
-                    max="300"
-                    className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
-                    required
-                  />
+                  <div className="flex items-center space-x-4">
+                    <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="300"
+                      value={duration}
+                      onChange={(e) => setDuration(Number(e.target.value))}
+                      className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, #6366F1 0%, #6366F1 ${((duration - 1) / 299) * 100}%, #E5E7EB ${((duration - 1) / 299) * 100}%, #E5E7EB 100%)`
+                      }}
+                    />
+                    <span className="text-primary-500 font-mono font-semibold min-w-[60px] text-right">
+                      {duration}分钟
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -305,16 +312,23 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
                 </select>
                 {isCustomAuxiliaryDuration && (
-                  <input
-                    type="number"
-                    value={auxiliaryDuration}
-                    onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
-                    placeholder="输入自定义时长（分钟）"
-                    min="1"
-                    max="120"
-                    className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
-                    required
-                  />
+                  <div className="flex items-center space-x-4">
+                    <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="120"
+                      value={auxiliaryDuration}
+                      onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
+                      className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB 100%)`
+                      }}
+                    />
+                    <span className="text-blue-500 font-mono font-semibold min-w-[60px] text-right">
+                      {auxiliaryDuration}分钟
+                    </span>
+                  </div>
                 )}
               </div>
 
