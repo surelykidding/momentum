@@ -132,7 +132,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
             <span className="font-medium">{formatTime(chain.duration)}</span>
           </div>
           <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
-            {chain.totalCompletions} completion{chain.totalCompletions === 1 ? '' : 's'}
+            {chain.totalCompletions} completion{(chain.totalCompletions === 0 || chain.totalCompletions === 1) ? '' : 's'}
           </div>
         </div>
 
