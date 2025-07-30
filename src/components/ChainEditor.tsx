@@ -238,14 +238,27 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                         max="300"
                         value={duration}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '' || value === '0') {
+                          const value = parseInt(e.target.value);
+                          if (e.target.value === '') {
+                            return; // 允许清空
+                          }
+                          if (isNaN(value)) {
+                            return; // 忽略非数字输入
+                          }
+                          if (value >= 1 && value <= 300) {
+                            setDuration(value);
+                          } else if (value < 1) {
                             setDuration(1);
+                          } else if (value > 300) {
+                            setDuration(300);
                           } else {
-                            const num = parseInt(value);
-                            if (num >= 1 && num <= 300) {
-                              setDuration(num);
-                            }
+                            setDuration(1);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // 当失去焦点时，如果为空则设置为1
+                          if (e.target.value === '') {
+                            setDuration(1);
                           }
                         }}
                         className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 w-20 text-center font-mono"
@@ -362,14 +375,27 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                         max="120"
                         value={auxiliaryDuration}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '' || value === '0') {
+                          const value = parseInt(e.target.value);
+                          if (e.target.value === '') {
+                            return; // 允许清空
+                          }
+                          if (isNaN(value)) {
+                            return; // 忽略非数字输入
+                          }
+                          if (value >= 1 && value <= 120) {
+                            setAuxiliaryDuration(value);
+                          } else if (value < 1) {
                             setAuxiliaryDuration(1);
+                          } else if (value > 120) {
+                            setAuxiliaryDuration(120);
                           } else {
-                            const num = parseInt(value);
-                            if (num >= 1 && num <= 120) {
-                              setAuxiliaryDuration(num);
-                            }
+                            setAuxiliaryDuration(1);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // 当失去焦点时，如果为空则设置为1
+                          if (e.target.value === '') {
+                            setAuxiliaryDuration(1);
                           }
                         }}
                         className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 w-20 text-center font-mono"
