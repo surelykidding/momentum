@@ -180,7 +180,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       {/* Interrupt warning modal */}
       {showInterruptWarning && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#161615]/95 backdrop-blur-xl rounded-3xl p-8 max-w-2xl w-full border border-gray-200 dark:border-gray-700/50 shadow-2xl animate-scale-in">
+          <div className="bg-white dark:bg-[#161615]/95 backdrop-blur-xl rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700/50 shadow-2xl animate-scale-in">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center space-x-3 mb-6">
                 <div className="w-16 h-16 rounded-3xl bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
