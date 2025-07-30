@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActiveSession, Chain } from '../types';
-import { AlertTriangle, Pause, Play, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatDuration } from '../utils/time';
 
 interface FocusModeProps {
@@ -9,8 +9,6 @@ interface FocusModeProps {
   onComplete: () => void;
   onInterrupt: (reason?: string) => void;
   onAddException: (exceptionRule: string) => void;
-  onPause: () => void;
-  onResume: () => void;
 }
 
 export const FocusMode: React.FC<FocusModeProps> = ({
@@ -19,8 +17,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   onComplete,
   onInterrupt,
   onAddException,
-  onPause,
-  onResume,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showInterruptWarning, setShowInterruptWarning] = useState(false);
@@ -145,16 +141,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               <span className="font-mono">#{chain.currentStreak}</span>
             </div>
           </div>
-        </div>
-
-        {/* Control buttons */}
-        <div className="flex justify-center space-x-6">
-          <button
-            onClick={session.isPaused ? onResume : onPause}
-            className="bg-white/80 dark:bg-white/10 backdrop-blur-sm hover:bg-white dark:hover:bg-white/20 text-gray-900 dark:text-white p-6 rounded-3xl transition-all duration-300 border border-gray-300 dark:border-white/20 hover:border-gray-400 dark:hover:border-white/40 hover:scale-110 shadow-lg"
-          >
-            {session.isPaused ? <Play size={32} /> : <Pause size={32} />}
-          </button>
         </div>
 
         {session.isPaused && (
