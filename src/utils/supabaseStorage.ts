@@ -69,9 +69,6 @@ export class SupabaseStorage {
           parent_id: chain.parentId || null,
           type: chain.type,
           sort_order: chain.sortOrder,
-          parent_id: chain.parentId || null,
-          type: chain.type,
-          sort_order: chain.sortOrder,
           trigger: chain.trigger,
           duration: chain.duration,
           description: chain.description,
@@ -101,9 +98,6 @@ export class SupabaseStorage {
         .from('chains')
         .update({
           name: chain.name,
-          parent_id: chain.parentId || null,
-          type: chain.type,
-          sort_order: chain.sortOrder,
           parent_id: chain.parentId || null,
           type: chain.type,
           sort_order: chain.sortOrder,

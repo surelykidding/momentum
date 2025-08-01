@@ -75,6 +75,7 @@ function App() {
             <ChainEditor
               chain={state.editingChain || undefined}
               isEditing={!!state.editingChain}
+              initialParentId={state.viewingChainId || undefined}
               onSave={handleSaveChain}
               onCancel={handleBackToDashboard}
             />

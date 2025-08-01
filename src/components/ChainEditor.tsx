@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Headphones, Code, BookOpen, Dumbbell, Coffee, Target, 
 interface ChainEditorProps {
   chain?: Chain;
   isEditing: boolean;
+  initialParentId?: string;
   onSave: (chain: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => void;
   onCancel: () => void;
 }
@@ -32,10 +33,14 @@ const DURATION_PRESETS = [25, 30, 45, 60, 90, 120];
 export const ChainEditor: React.FC<ChainEditorProps> = ({
   chain,
   isEditing,
+  initialParentId,
   onSave,
   onCancel,
 }) => {
   const [name, setName] = useState(chain?.name || '');
+  const [type, setType] = useState<ChainType>(chain?.type || 'unit');
+  const [parentId, setParentId] = useState(chain?.parentId || initialParentId);
+  const [sortOrder, setSortOrder] = useState(chain?.sortOrder || Date.now());
   const [trigger, setTrigger] = useState(chain?.trigger || '');
   const [customTrigger, setCustomTrigger] = useState('');
   const [duration, setDuration] = useState(chain?.duration || 45);
@@ -66,6 +71,9 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
 
     onSave({
       name: name.trim(),
+      type,
+      parentId,
+      sortOrder,
       trigger: trigger === '自定义触发器' ? customTrigger.trim() : trigger,
       duration: finalDuration,
       description: description.trim(),
@@ -134,6 +142,34 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
               required
             />
+          </div>
+
+          {/* Chain Type */}
+          <div className="bento-card animate-scale-in">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                <i className="fas fa-layer-group text-green-500"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">任务类型</h3>
+                <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN TYPE</p>
+              </div>
+            </div>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as ChainType)}
+              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
+              required
+            >
+              <option value="unit">基础单元</option>
+              <option value="group">任务群容器</option>
+              <option value="assault">突击单元（学习、实验、论文）</option>
+              <option value="recon">侦查单元（信息搜集）</option>
+              <option value="command">指挥单元（制定计划）</option>
+              <option value="special_ops">特勤单元（处理杂事）</option>
+              <option value="engineering">工程单元（运动锻炼）</option>
+              <option value="quartermaster">炊事单元（备餐做饭）</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

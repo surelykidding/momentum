@@ -3,9 +3,6 @@ export interface Chain {
   parentId?: string; // 父任务ID，用于构建层级关系
   type: ChainType; // 任务类型/兵种
   sortOrder: number; // 在同一父任务下的排序
-  parentId?: string; // 父任务ID，用于构建层级关系
-  type: ChainType; // 任务类型/兵种
-  sortOrder: number; // 在同一父任务下的排序
   name: string;
   trigger: string;
   duration: number; // in minutes
@@ -23,22 +20,6 @@ export interface Chain {
   auxiliaryCompletionTrigger: string; // 预约完成条件，通常与主链trigger相同
   createdAt: Date;
   lastCompletedAt?: Date;
-}
-
-export type ChainType = 
-  | 'unit'          // 基础单元
-  | 'group'         // 任务群容器
-  | 'assault'       // 突击单元（学习、实验、论文）
-  | 'recon'         // 侦查单元（信息搜集）
-  | 'command'       // 指挥单元（制定计划）
-  | 'special_ops'   // 特勤单元（处理杂事）
-  | 'engineering'   // 工程单元（运动锻炼）
-  | 'quartermaster'; // 炊事单元（备餐做饭）
-
-// 任务树节点，用于前端渲染层级结构
-export interface ChainTreeNode extends Chain {
-  children: ChainTreeNode[];
-  depth: number;
 }
 
 export type ChainType = 
