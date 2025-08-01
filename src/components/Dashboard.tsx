@@ -137,19 +137,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onDelete={onDeleteChain}
                   />
                 )
-                  />
-                ) : (
-                  <ChainCard
-                    key={chainNode.id}
-                    chain={chainNode}
-                    scheduledSession={getScheduledSession(chainNode.id)}
-                    onStartChain={onStartChain}
-                    onScheduleChain={onScheduleChain}
-                    onViewDetail={onViewChainDetail}
-                    onCancelScheduledSession={onCancelScheduledSession}
-                    onDelete={onDeleteChain}
-                  />
-                )
               ))}
             </div>
           </div>
