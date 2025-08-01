@@ -21,6 +21,12 @@ export class SupabaseStorage {
     return data.map(chain => ({
       id: chain.id,
       name: chain.name,
+      parentId: chain.parent_id || undefined,
+      type: chain.type as Chain['type'],
+      sortOrder: chain.sort_order,
+      parentId: chain.parent_id || undefined,
+      type: chain.type as Chain['type'],
+      sortOrder: chain.sort_order,
       trigger: chain.trigger,
       duration: chain.duration,
       description: chain.description,
@@ -60,6 +66,12 @@ export class SupabaseStorage {
         .insert(newChains.map(chain => ({
           id: chain.id,
           name: chain.name,
+          parent_id: chain.parentId || null,
+          type: chain.type,
+          sort_order: chain.sortOrder,
+          parent_id: chain.parentId || null,
+          type: chain.type,
+          sort_order: chain.sortOrder,
           trigger: chain.trigger,
           duration: chain.duration,
           description: chain.description,
@@ -89,6 +101,12 @@ export class SupabaseStorage {
         .from('chains')
         .update({
           name: chain.name,
+          parent_id: chain.parentId || null,
+          type: chain.type,
+          sort_order: chain.sortOrder,
+          parent_id: chain.parentId || null,
+          type: chain.type,
+          sort_order: chain.sortOrder,
           trigger: chain.trigger,
           duration: chain.duration,
           description: chain.description,

@@ -1,7 +1,11 @@
 import React from 'react';
 import { Chain, ScheduledSession } from '../types';
 import { ChainCard } from './ChainCard';
+import { GroupCard } from './GroupCard';
+import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
+import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
+import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { Plus } from 'lucide-react';
 
 interface DashboardProps {
@@ -25,6 +29,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCancelScheduledSession,
   onDeleteChain,
 }) => {
+  // 构建任务树并获取顶层任务
+  const chainTree = buildChainTree(chains);
+  const topLevelChains = getTopLevelChains(chainTree);
+
+  // 构建任务树并获取顶层任务
+  const chainTree = buildChainTree(chains);
+  const topLevelChains = getTopLevelChains(chainTree);
+
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
   };
@@ -101,17 +113,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {chains.map(chain => (
-                <ChainCard
-                  key={chain.id}
-                  chain={chain}
-                  scheduledSession={getScheduledSession(chain.id)}
-                  onStartChain={onStartChain}
-                  onScheduleChain={onScheduleChain}
-                  onViewDetail={onViewChainDetail}
-                  onCancelScheduledSession={onCancelScheduledSession}
-                  onDelete={onDeleteChain}
-                />
+              {topLevelChains.map(chainNode => (
+                chainNode.type === 'group' ? (
+                  <GroupCard
+                    key={chainNode.id}
+                    group={chainNode}
+                    scheduledSession={getScheduledSession(chainNode.id)}
+                    onStartChain={onStartChain}
+                    onScheduleChain={onScheduleChain}
+                    onViewDetail={onViewChainDetail}
+                    onCancelScheduledSession={onCancelScheduledSession}
+                    onDelete={onDeleteChain}
+                  />
+                ) : (
+                  <ChainCard
+                    key={chainNode.id}
+                    chain={chainNode}
+                    scheduledSession={getScheduledSession(chainNode.id)}
+                    onStartChain={onStartChain}
+                    onScheduleChain={onScheduleChain}
+                    onViewDetail={onViewChainDetail}
+                    onCancelScheduledSession={onCancelScheduledSession}
+                    onDelete={onDeleteChain}
+                  />
+                )
+                  />
+                ) : (
+                  <ChainCard
+                    key={chainNode.id}
+                    chain={chainNode}
+                    scheduledSession={getScheduledSession(chainNode.id)}
+                    onStartChain={onStartChain}
+                    onScheduleChain={onScheduleChain}
+                    onViewDetail={onViewChainDetail}
+                    onCancelScheduledSession={onCancelScheduledSession}
+                    onDelete={onDeleteChain}
+                  />
+                )
               ))}
             </div>
           </div>

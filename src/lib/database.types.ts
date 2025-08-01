@@ -13,6 +13,9 @@ export interface Database {
         Row: {
           id: string
           name: string
+          parent_id: string | null
+          type: string
+          sort_order: number
           trigger: string
           duration: number
           description: string
@@ -33,6 +36,9 @@ export interface Database {
         Insert: {
           id?: string
           name: string
+          parent_id?: string | null
+          type?: string
+          sort_order?: number
           trigger: string
           duration?: number
           description: string
@@ -53,6 +59,9 @@ export interface Database {
         Update: {
           id?: string
           name?: string
+          parent_id?: string | null
+          type?: string
+          sort_order?: number
           trigger?: string
           duration?: number
           description?: string
