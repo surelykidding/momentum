@@ -338,8 +338,6 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                  <p className="text-sm font-mono text-gray-500 tracking-wide">
                    {type === 'group' ? 'AUXILIARY CHAIN (选填)' : 'AUXILIARY CHAIN'}
                  </p>
-                     {type === 'group' ? 'GROUP CONTAINER (选填)' : 'MAIN CHAIN'}
-                   </p>
                 </div>
               </div>
                
