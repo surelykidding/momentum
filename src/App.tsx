@@ -33,11 +33,21 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 只有在 Supabase 配置正确时才检查认证
         if (isSupabaseConfigured) {
-          const user = await getCurrentUser();
-          if (user) {
-            setStorage(supabaseStorage);
+          // Test Supabase connection with a timeout
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout')), 5000);
+          });
+          
+          try {
+            const user = await Promise.race([getCurrentUser(), timeoutPromise]);
+            if (user) {
+              setStorage(supabaseStorage);
+              return;
+            }
+          } catch (networkError) {
+            console.warn('Supabase connection failed, falling back to localStorage:', networkError);
+            setStorage(localStorageUtils);
             return;
           }
         }
