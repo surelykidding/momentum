@@ -189,63 +189,65 @@ export const ChainCard: React.FC<ChainCardProps> = ({
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full border border-gray-200 shadow-2xl animate-scale-in">
+          <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-3xl p-8 max-w-lg w-full border border-gray-200/60 dark:border-slate-600/60 shadow-2xl animate-scale-in">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mx-auto mb-6">
                 <i className="fas fa-trash text-red-500 text-2xl"></i>
               </div>
-              <h3 className="text-2xl font-bold font-chinese text-[#161615] mb-2">确认删除链条</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-3">确认删除链条</h3>
+              <p className="text-gray-600 dark:text-slate-300 mb-6">
                 你确定要删除链条 "<span className="text-primary-500 font-semibold">{chain.name}</span>" 吗？
               </p>
             </div>
             
-            <div className="bg-red-50 rounded-2xl p-6 border border-red-200 mb-8">
+            <div className="bg-red-50/80 dark:bg-red-900/20 rounded-2xl p-6 border border-red-200/60 dark:border-red-800/40 mb-8">
               <div className="text-center mb-6">
-                <p className="text-red-600 text-sm font-medium font-chinese">
+                <p className="text-red-600 dark:text-red-400 text-sm font-medium font-chinese">
                   ⚠️ 此操作将永久删除以下数据：
                 </p>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-red-600 text-sm">
-                <div className="bg-white rounded-xl p-4 border border-red-200">
+              <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm">
+                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
                   <div className="font-semibold mb-3 flex items-center font-chinese">
                     <i className="fas fa-fire mr-2"></i>
                     主链数据
                   </div>
-                  <div className="space-y-1 text-xs">
+                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                     <div>记录: #{chain.currentStreak}</div>
                     <div>完成: {chain.totalCompletions}</div>
                     <div>失败: {chain.totalFailures}</div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-red-200">
+                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
                   <div className="font-semibold mb-3 flex items-center font-chinese">
                     <i className="fas fa-calendar mr-2"></i>
                     预约链数据
                   </div>
-                  <div className="space-y-1 text-xs">
+                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                     <div>记录: #{chain.auxiliaryStreak}</div>
                     <div>失败: {chain.auxiliaryFailures}</div>
-                    <div>预约设置</div>
+                    <div>例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-red-200">
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm mt-4">
+                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
                   <div className="font-semibold mb-3 flex items-center font-chinese">
                     <i className="fas fa-chart-line mr-2"></i>
                     历史记录
                   </div>
-                  <div className="space-y-1 text-xs">
-                    <div>完成记录</div>
-                    <div>失败记录</div>
-                    <div>时间统计</div>
+                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
+                    <div>完成记录: {chain.totalCompletions} 次</div>
+                    <div>失败记录: {chain.totalFailures} 次</div>
+                    <div>成功率: {chain.totalCompletions > 0 ? Math.round((chain.totalCompletions / (chain.totalCompletions + chain.totalFailures)) * 100) : 0}%</div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-red-200">
+                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
                   <div className="font-semibold mb-3 flex items-center font-chinese">
                     <i className="fas fa-cog mr-2"></i>
                     规则设置
                   </div>
-                  <div className="space-y-1 text-xs">
+                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                     <div>例外: {chain.exceptions.length} 条</div>
                     <div>预约例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
                     <div>所有配置</div>
@@ -257,13 +259,13 @@ export const ChainCard: React.FC<ChainCardProps> = ({
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-4 rounded-2xl font-medium transition-colors duration-200 font-chinese"
+                className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 font-chinese"
               >
                 取消
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-medium transition-colors duration-200 flex items-center justify-center space-x-2 font-chinese"
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl font-chinese"
               >
                 <i className="fas fa-trash"></i>
                 <span>确认删除</span>

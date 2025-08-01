@@ -259,71 +259,73 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
         {/* Delete confirmation modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-6xl w-full border border-gray-200 shadow-2xl animate-scale-in">
+            <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-3xl p-8 max-w-lg w-full border border-gray-200/60 dark:border-slate-600/60 shadow-2xl animate-scale-in">
               <div className="text-center mb-8">
-                <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mx-auto mb-6">
                   <Trash2 className="text-red-500" size={32} />
                 </div>
-                <h3 className="text-3xl font-bold font-chinese text-[#161615] mb-2">确认删除链条</h3>
-                <p className="text-gray-600 mb-4 font-chinese">
+                <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-3">确认删除链条</h3>
+                <p className="text-gray-600 dark:text-slate-300 mb-6 font-chinese">
                   你确定要删除链条 "<span className="text-primary-500 font-semibold">{chain.name}</span>" 吗？
                 </p>
               </div>
               
-              <div className="bg-red-50 rounded-3xl p-8 border border-red-200 mb-8">
+              <div className="bg-red-50/80 dark:bg-red-900/20 rounded-2xl p-6 border border-red-200/60 dark:border-red-800/40 mb-8">
                 <div className="text-center mb-6">
-                  <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-2 font-chinese">
+                  <p className="text-red-600 dark:text-red-400 text-sm font-medium font-chinese">
                     ⚠️ 此操作将永久删除以下数据：
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-red-600 dark:text-red-400 text-sm">
-                  <div className="bg-white rounded-2xl p-6 border border-red-200">
-                    <div className="font-medium mb-4 flex items-center font-chinese">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center mr-3">
+                <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm">
+                  <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
+                    <div className="font-semibold mb-3 flex items-center font-chinese">
+                      <div className="w-6 h-6 rounded-lg bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mr-2">
                         <Flame size={16} />
                       </div>
                       主链数据
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                       <div className="font-mono">记录: #{chain.currentStreak}</div>
                       <div className="font-mono">完成: {chain.totalCompletions}</div>
                       <div className="font-mono">失败: {chain.totalFailures}</div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-2xl p-6 border border-red-200">
-                    <div className="font-medium mb-4 flex items-center font-chinese">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center mr-3">
+                  <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
+                    <div className="font-semibold mb-3 flex items-center font-chinese">
+                      <div className="w-6 h-6 rounded-lg bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mr-2">
                         <Calendar size={16} />
                       </div>
                       预约链数据
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                       <div className="font-mono">记录: #{chain.auxiliaryStreak}</div>
                       <div className="font-mono">失败: {chain.auxiliaryFailures}</div>
-                      <div className="font-chinese">预约设置</div>
+                      <div className="font-chinese">例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-2xl p-6 border border-red-200">
-                    <div className="font-medium mb-4 flex items-center font-chinese">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center mr-3">
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm mt-4">
+                  <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
+                    <div className="font-semibold mb-3 flex items-center font-chinese">
+                      <div className="w-6 h-6 rounded-lg bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mr-2">
                         <Clock size={16} />
                       </div>
                       历史记录
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                       <div className="font-mono">记录: {chainHistory.length} 条</div>
                       <div className="font-mono">成功率: {successRate}%</div>
                       <div className="font-chinese">时间统计</div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-2xl p-6 border border-red-200">
-                    <div className="font-medium mb-4 flex items-center font-chinese">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center mr-3">
+                  <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
+                    <div className="font-semibold mb-3 flex items-center font-chinese">
+                      <div className="w-6 h-6 rounded-lg bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mr-2">
                         <AlertCircle size={16} />
                       </div>
                       规则设置
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
                       <div className="font-mono">例外: {chain.exceptions.length} 条</div>
                       <div className="font-mono">预约例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
                       <div className="font-chinese">所有配置</div>
@@ -335,7 +337,7 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-[#161615] dark:text-slate-100 px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center hover:scale-105 font-chinese"
+                  className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 font-chinese"
                 >
                   取消
                 </button>
@@ -344,7 +346,7 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
                     onDelete();
                     setShowDeleteConfirm(false);
                   }}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg font-chinese"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl font-chinese"
                 >
                   <Trash2 size={16} />
                   <span>确认删除</span>
