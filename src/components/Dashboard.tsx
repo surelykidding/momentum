@@ -2,9 +2,7 @@ import React from 'react';
 import { Chain, ScheduledSession } from '../types';
 import { ChainCard } from './ChainCard';
 import { GroupCard } from './GroupCard';
-import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
-import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { Plus } from 'lucide-react';
 
