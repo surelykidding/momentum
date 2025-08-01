@@ -29,8 +29,6 @@ export const ChainCard: React.FC<ChainCardProps> = ({
 
   const typeConfig = getChainTypeConfig(chain.type);
 
-  const typeConfig = getChainTypeConfig(chain.type);
-
   useEffect(() => {
     if (!scheduledSession) return;
 
