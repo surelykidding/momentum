@@ -6,7 +6,6 @@ import { ChainEditor } from './components/ChainEditor';
 import { FocusMode } from './components/FocusMode';
 import { ChainDetail } from './components/ChainDetail';
 import { GroupView } from './components/GroupView';
-import { GroupView } from './components/GroupView';
 import { AuxiliaryJudgment } from './components/AuxiliaryJudgment';
 import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
