@@ -3,7 +3,6 @@ import { Chain, ScheduledSession, ChainTreeNode } from '../types';
 import { Play, Clock } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 import { getChainTypeConfig } from '../utils/chainTree';
-import { getChainTypeConfig } from '../utils/chainTree';
 
 interface ChainCardProps {
   chain: Chain | ChainTreeNode;
