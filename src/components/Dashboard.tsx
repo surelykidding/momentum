@@ -31,10 +31,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const chainTree = buildChainTree(chains);
   const topLevelChains = getTopLevelChains(chainTree);
 
-  // 构建任务树并获取顶层任务
-  const chainTree = buildChainTree(chains);
-  const topLevelChains = getTopLevelChains(chainTree);
-
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
   };
