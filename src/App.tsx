@@ -144,16 +144,6 @@ function App() {
             )}
           </>
         );
-            {showAuxiliaryJudgment && (
-              <AuxiliaryJudgment
-                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
-                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
-                onCancel={() => setShowAuxiliaryJudgment(null)}
-              />
-            )}
-          </>
-        );
 
       case 'group':
         const viewingGroup = state.chains.find(c => c.id === state.viewingChainId);
@@ -279,7 +269,7 @@ function App() {
     return () => clearInterval(interval);
   }, [storage]);
 
-  const handleCreateChain = () => {
+  const handleCreateChain = (parentId?: string) => {
     setState(prev => ({
       ...prev,
       currentView: 'editor',
@@ -387,19 +377,7 @@ function App() {
       }
       return;
     }
-    // 如果是任务群，找到下一个待执行的单元
-    if (chain.type === 'group') {
-      const chainTree = buildChainTree(state.chains);
-      const groupNode = chainTree.find(node => node.id === chainId);
-      if (groupNode) {
-        const nextUnit = getNextUnitInGroup(groupNode);
-        if (nextUnit) {
-          handleStartChain(nextUnit.id);
-          return;
-        }
-      }
-      return;
-    }
+
     const activeSession: ActiveSession = {
       chainId,
       startedAt: new Date(),
@@ -639,9 +617,6 @@ function App() {
     
     const viewType = chain.type === 'group' ? 'group' : 'detail';
     
-    
-    const viewType = chain.type === 'group' ? 'group' : 'detail';
-    
     setState(prev => ({
       ...prev,
       currentView: viewType,
@@ -649,22 +624,11 @@ function App() {
     }));
   };
 
-  const handleCreateChain = (parentId?: string) => {
+  const handleBackToDashboard = () => {
     setState(prev => ({
       ...prev,
       currentView: 'dashboard',
       editingChain: null,
-      // 如果有 parentId，可以在编辑器中预设父任务
-      viewingChainId: null,
-    }));
-  };
-
-  const handleCreateChain = (parentId?: string) => {
-    setState(prev => ({
-      ...prev,
-      currentView: 'dashboard',
-      editingChain: null,
-      // 如果有 parentId，可以在编辑器中预设父任务
       viewingChainId: null,
     }));
   };
