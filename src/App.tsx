@@ -153,6 +153,8 @@ function App() {
               onViewChainDetail={handleViewChainDetail}
               onCancelScheduledSession={handleCancelScheduledSession}
               onDeleteChain={handleDeleteChain}
+              onExportChain={handleExportChain}
+              onImportChain={handleImportChain}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
@@ -610,6 +612,66 @@ function App() {
         viewingChainId: prev.viewingChainId === chainId ? null : prev.viewingChainId,
       };
     });
+  };
+
+  const handleExportChain = (chainId: string) => {
+    const chainToExport = state.chains.find(c => c.id === chainId);
+    if (!chainToExport) return;
+
+    const dataStr = JSON.stringify(chainToExport, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `${chainToExport.name}_export.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const handleImportChain = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result;
+        if (typeof text !== 'string') {
+          alert('Error: Could not read file content.');
+          return;
+        }
+        const importedChain = JSON.parse(text) as Chain;
+
+        // Basic validation
+        if (!importedChain.name || !importedChain.trigger || !importedChain.duration) {
+          alert('Error: Invalid chain file.');
+          return;
+        }
+
+        // Create as a new chain with a new ID, but preserve all other data
+        const newChain: Chain = {
+          ...importedChain,
+          id: crypto.randomUUID(), // Assign a new unique ID
+          createdAt: new Date(), // Set new creation date
+          lastCompletedAt: importedChain.lastCompletedAt ? new Date(importedChain.lastCompletedAt) : undefined,
+        };
+
+        setState(prev => {
+          const updatedChains = [...prev.chains, newChain];
+          storage.saveChains(updatedChains);
+
+          return {
+            ...prev,
+            chains: updatedChains,
+          };
+        });
+
+        alert(`成功导入新链条: "${newChain.name}"`);
+
+      } catch (error) {
+        console.error('Failed to import chain:', error);
+        alert('Error: Failed to parse chain file. Make sure it is a valid exported JSON file.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   return renderContent();

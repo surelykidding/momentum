@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Chain, ScheduledSession } from '../types';
 import { Play, Clock } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
+import { showNotification } from '../utils/notifications';
 
 interface ChainCardProps {
   chain: Chain;
@@ -11,6 +12,7 @@ interface ChainCardProps {
   onViewDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDelete: (chainId: string) => void;
+  onExport: (chainId: string) => void;
 }
 
 export const ChainCard: React.FC<ChainCardProps> = ({
@@ -21,26 +23,47 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   onViewDetail,
   onCancelScheduledSession,
   onDelete,
+  onExport,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const notificationSentRef = useRef({ warning: false, final: false });
 
   useEffect(() => {
-    if (!scheduledSession) return;
+    if (!scheduledSession) {
+      setTimeRemaining(0);
+      return;
+    }
+
+    notificationSentRef.current = { warning: false, final: false };
+
+    const totalDurationInSeconds = chain.auxiliaryDuration * 60;
+    // 当剩下不到三分之一时间时通知（如果总时间大于15分钟则固定为5分钟）
+    const warningThresholdInSeconds = totalDurationInSeconds > 900 ? 300 : totalDurationInSeconds / 3;
+    const warningTimeInMinutes = Math.ceil(warningThresholdInSeconds / 60);
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
-      if (remaining <= 0) {
+
+      // Dynamic warning
+      if (remaining > 0 && remaining <= warningThresholdInSeconds && !notificationSentRef.current.warning) {
+        showNotification('预约任务即将到期', `“${chain.name}”的预约任务还剩 ${formatDuration(remaining)}！`);
+        notificationSentRef.current.warning = true;
+      }
+
+      if (remaining <= 0 && !notificationSentRef.current.final) {
         // Session expired - this would be handled by parent component
+        showNotification('预约任务失败', `“${chain.name}”的预约任务已到期，判定失败。`);
+        notificationSentRef.current.final = true;
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession]);
+  }, [scheduledSession, chain.name, chain.auxiliaryDuration]);
 
   const isScheduled = scheduledSession && timeRemaining > 0;
 
@@ -59,6 +82,12 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   const handleCancelDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDeleteConfirm(false);
+  };
+
+  const handleExportClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onExport(chain.id);
+    setShowMenu(false);
   };
 
   return (
@@ -81,6 +110,13 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           
           {showMenu && (
             <div className="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-200 dark:border-slate-600 py-2 z-10 min-w-[140px]">
+              <button
+                onClick={handleExportClick}
+                className="w-full px-4 py-3 text-left text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition-colors"
+              >
+                <i className="fas fa-download text-sm"></i>
+                <span className="font-chinese font-medium">导出链条</span>
+              </button>
               <button
                 onClick={handleDeleteClick}
                 className="w-full px-4 py-3 text-left text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
