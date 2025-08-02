@@ -5,11 +5,13 @@ import { AuthWrapper } from './components/AuthWrapper';
 import { ChainEditor } from './components/ChainEditor';
 import { FocusMode } from './components/FocusMode';
 import { ChainDetail } from './components/ChainDetail';
+import { GroupView } from './components/GroupView';
 import { AuxiliaryJudgment } from './components/AuxiliaryJudgment';
 import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
 import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
+import { buildChainTree, getNextUnitInGroup } from './utils/chainTree';
 
 function App() {
   const [state, setState] = useState<AppState>({
@@ -31,11 +33,21 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 只有在 Supabase 配置正确时才检查认证
         if (isSupabaseConfigured) {
-          const user = await getCurrentUser();
-          if (user) {
-            setStorage(supabaseStorage);
+          // Test Supabase connection with a timeout
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout')), 5000);
+          });
+          
+          try {
+            const user = await Promise.race([getCurrentUser(), timeoutPromise]);
+            if (user) {
+              setStorage(supabaseStorage);
+              return;
+            }
+          } catch (networkError) {
+            console.warn('Supabase connection failed, falling back to localStorage:', networkError);
+            setStorage(localStorageUtils);
             return;
           }
         }
@@ -73,6 +85,7 @@ function App() {
             <ChainEditor
               chain={state.editingChain || undefined}
               isEditing={!!state.editingChain}
+              initialParentId={state.viewingChainId || undefined}
               onSave={handleSaveChain}
               onCancel={handleBackToDashboard}
             />
@@ -129,6 +142,44 @@ function App() {
               onBack={handleBackToDashboard}
               onEdit={() => handleEditChain(viewingChain.id)}
               onDelete={() => handleDeleteChain(viewingChain.id)}
+            />
+            {showAuxiliaryJudgment && (
+              <AuxiliaryJudgment
+                chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
+                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
+                onCancel={() => setShowAuxiliaryJudgment(null)}
+              />
+            )}
+          </>
+        );
+
+      case 'group':
+        const viewingGroup = state.chains.find(c => c.id === state.viewingChainId);
+        if (!viewingGroup) {
+          handleBackToDashboard();
+          return null;
+        }
+        
+        // 构建任务树并找到对应的群组节点
+        const chainTree = buildChainTree(state.chains);
+        const groupNode = chainTree.find(node => node.id === state.viewingChainId);
+        if (!groupNode) {
+          handleBackToDashboard();
+          return null;
+        }
+        
+        return (
+          <>
+            <GroupView
+              group={groupNode}
+              scheduledSessions={state.scheduledSessions}
+              onBack={handleBackToDashboard}
+              onStartChain={handleStartChain}
+              onScheduleChain={handleScheduleChain}
+              onEditChain={(chainId) => handleEditChain(chainId)}
+              onDeleteChain={handleDeleteChain}
+              onAddUnit={() => handleCreateChain(state.viewingChainId!)}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
@@ -227,7 +278,7 @@ function App() {
     return () => clearInterval(interval);
   }, [storage]);
 
-  const handleCreateChain = () => {
+  const handleCreateChain = (parentId?: string) => {
     setState(prev => ({
       ...prev,
       currentView: 'editor',
@@ -321,6 +372,20 @@ function App() {
   const handleStartChain = (chainId: string) => {
     const chain = state.chains.find(c => c.id === chainId);
     if (!chain) return;
+
+    // 如果是任务群，找到下一个待执行的单元
+    if (chain.type === 'group') {
+      const chainTree = buildChainTree(state.chains);
+      const groupNode = chainTree.find(node => node.id === chainId);
+      if (groupNode) {
+        const nextUnit = getNextUnitInGroup(groupNode);
+        if (nextUnit) {
+          handleStartChain(nextUnit.id);
+          return;
+        }
+      }
+      return;
+    }
 
     const activeSession: ActiveSession = {
       chainId,
@@ -556,9 +621,14 @@ function App() {
   };
 
   const handleViewChainDetail = (chainId: string) => {
+    const chain = state.chains.find(c => c.id === chainId);
+    if (!chain) return;
+    
+    const viewType = chain.type === 'group' ? 'group' : 'detail';
+    
     setState(prev => ({
       ...prev,
-      currentView: 'detail',
+      currentView: viewType,
       viewingChainId: chainId,
     }));
   };

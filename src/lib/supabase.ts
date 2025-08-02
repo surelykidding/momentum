@@ -14,36 +14,53 @@ export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 // Auth helpers
 export const getCurrentUser = async () => {
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  } catch (error) {
+    console.warn('Failed to get current user:', error);
+    return null;
+  }
 };
 
 export const signUp = async (email: string, password: string) => {
   if (!supabase) {
     return { data: null, error: { message: 'Supabase not configured' } };
   }
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (networkError) {
+    return { data: null, error: { message: 'Network error: Unable to connect to Supabase' } };
+  }
 };
 
 export const signIn = async (email: string, password: string) => {
   if (!supabase) {
     return { data: null, error: { message: 'Supabase not configured' } };
   }
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (networkError) {
+    return { data: null, error: { message: 'Network error: Unable to connect to Supabase' } };
+  }
 };
 
 export const signOut = async () => {
   if (!supabase) {
     return { error: { message: 'Supabase not configured' } };
   }
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+  } catch (networkError) {
+    return { error: { message: 'Network error: Unable to connect to Supabase' } };
+  }
 };
