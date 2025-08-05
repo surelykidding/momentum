@@ -47,7 +47,12 @@ export class SupabaseStorage {
 
   async saveChains(chains: Chain[]): Promise<void> {
     const user = await getCurrentUser();
-    if (!user) return;
+    if (!user) {
+      console.error('No authenticated user found when trying to save chains');
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Saving chains for user:', user.id, 'chains:', chains.length);
 
     // First, get existing chains to determine which are new and which need updates
     const { data: existingChains } = await supabase
@@ -59,6 +64,8 @@ export class SupabaseStorage {
     const newChains = chains.filter(chain => !existingIds.has(chain.id));
     const updatedChains = chains.filter(chain => existingIds.has(chain.id));
 
+    console.log('New chains to insert:', newChains.length);
+    console.log('Existing chains to update:', updatedChains.length);
     // Insert new chains
     if (newChains.length > 0) {
       const { error: insertError } = await supabase
@@ -89,7 +96,9 @@ export class SupabaseStorage {
 
       if (insertError) {
         console.error('Error inserting chains:', insertError);
+        throw new Error(`Failed to insert chains: ${insertError.message}`);
       }
+      console.log('Successfully inserted', newChains.length, 'new chains');
     }
 
     // Update existing chains
@@ -121,6 +130,7 @@ export class SupabaseStorage {
 
       if (updateError) {
         console.error('Error updating chain:', updateError);
+        throw new Error(`Failed to update chain: ${updateError.message}`);
       }
     }
 
@@ -137,8 +147,12 @@ export class SupabaseStorage {
 
       if (deleteError) {
         console.error('Error deleting chains:', deleteError);
+        throw new Error(`Failed to delete chains: ${deleteError.message}`);
       }
+      console.log('Successfully deleted', toDelete.length, 'chains');
     }
+
+    console.log('Successfully saved all chains');
   }
 
   // Scheduled Sessions
