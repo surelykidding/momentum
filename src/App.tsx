@@ -247,10 +247,12 @@ function App() {
       console.log('应用初始化完成，开始加载数据');
       loadData();
     }
-  }, [isInitialized, storage]);
+  }, [storage, isInitialized]);
 
   // Clean up expired scheduled sessions periodically
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const interval = setInterval(() => {
       setState(prev => {
         const expiredSessions = prev.scheduledSessions.filter(
@@ -272,7 +274,7 @@ function App() {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [storage]);
+  }, [storage, isInitialized]);
 
   const handleCreateChain = (parentId?: string) => {
     setState(prev => ({
