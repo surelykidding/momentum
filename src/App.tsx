@@ -383,24 +383,36 @@ function App() {
       auxiliarySignal: chain.auxiliarySignal,
     };
 
-    setState(prev => {
-      const updatedSessions = [...prev.scheduledSessions, scheduledSession];
-      storage.saveScheduledSessions(updatedSessions);
-      
-      // 增加辅助链记录
-      const updatedChains = prev.chains.map(chain =>
-        chain.id === chainId
-          ? { ...chain, auxiliaryStreak: chain.auxiliaryStreak + 1 }
-          : chain
-      );
-      storage.saveChains(updatedChains);
-      
-      return { 
-        ...prev, 
-        scheduledSessions: updatedSessions,
-        chains: updatedChains
-      };
-    });
+    const updateStateAndSave = async () => {
+      try {
+        const updatedSessions = [...state.scheduledSessions, scheduledSession];
+        
+        // 增加辅助链记录
+        const updatedChains = state.chains.map(chain =>
+          chain.id === chainId
+            ? { ...chain, auxiliaryStreak: chain.auxiliaryStreak + 1 }
+            : chain
+        );
+        
+        // Save to storage first
+        await Promise.all([
+          storage.saveScheduledSessions(updatedSessions),
+          storage.saveChains(updatedChains)
+        ]);
+        
+        // Update state after successful save
+        setState(prev => ({ 
+          ...prev,
+          scheduledSessions: updatedSessions,
+          chains: updatedChains
+        }));
+      } catch (error) {
+        console.error('Failed to schedule chain:', error);
+        alert('预约失败，请重试');
+      }
+    };
+
+    updateStateAndSave();
   };
 
   const handleStartChain = (chainId: string) => {
