@@ -247,8 +247,10 @@ function App() {
     const loadData = async () => {
       if (!isInitialized) return;
       
+      console.log('开始加载数据，使用存储类型:', storage === supabaseStorage ? 'Supabase' : 'LocalStorage');
       try {
         const chains = await storage.getChains();
+        console.log('加载到的链数据:', chains.length, '条');
         const allScheduledSessions = await storage.getScheduledSessions();
         const scheduledSessions = allScheduledSessions.filter(
           session => !isSessionExpired(session.expiresAt)
@@ -256,6 +258,7 @@ function App() {
         const activeSession = await storage.getActiveSession();
         const completionHistory = await storage.getCompletionHistory();
 
+        console.log('设置应用状态，链数量:', chains.length);
         setState(prev => ({
           ...prev,
           chains,
@@ -270,11 +273,12 @@ function App() {
           await storage.saveScheduledSessions(scheduledSessions);
         }
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error('加载数据失败:', error);
       }
     };
 
     if (storage && isInitialized) {
+      console.log('存储和初始化状态就绪，开始加载数据');
       loadData();
     }
   }, [storage, isInitialized]);
@@ -326,6 +330,7 @@ function App() {
   };
 
   const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => {
+    console.log('开始保存链数据...', chainData);
     try {
       let updatedChains: Chain[];
       
@@ -336,6 +341,7 @@ function App() {
             ? { ...chain, ...chainData }
             : chain
         );
+        console.log('编辑现有链，更新后的链数组长度:', updatedChains.length);
       } else {
         // Creating new chain
         const newChain: Chain = {
@@ -348,11 +354,15 @@ function App() {
           auxiliaryFailures: 0,
           createdAt: new Date(),
         };
+        console.log('创建新链:', newChain);
         updatedChains = [...state.chains, newChain];
+        console.log('添加新链后的链数组长度:', updatedChains.length);
       }
       
+      console.log('准备保存到存储...');
       // Wait for data to be saved before updating UI
       await storage.saveChains(updatedChains);
+      console.log('数据保存成功，更新UI状态');
       
       // Only update state after successful save
       setState(prev => ({
@@ -361,10 +371,12 @@ function App() {
         currentView: 'dashboard',
         editingChain: null,
       }));
+      console.log('UI状态更新完成');
     } catch (error) {
       console.error('Failed to save chain:', error);
-      // You could add error toast notification here
-      alert('保存失败，请重试');
+      // 提供更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`保存失败: ${errorMessage}，请重试`);
     }
   };
 
