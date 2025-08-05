@@ -39,7 +39,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
 }) => {
   const [name, setName] = useState(chain?.name || '');
   const [type, setType] = useState<ChainType>(chain?.type || 'unit');
-  const [parentId, setParentId] = useState(chain?.parentId || initialParentId);
+  const [parentId, setParentId] = useState(chain?.parentId || initialParentId || undefined);
   const [sortOrder, setSortOrder] = useState(chain?.sortOrder || Math.floor(Date.now() / 1000));
   const [trigger, setTrigger] = useState(chain?.trigger || '');
   const [customTrigger, setCustomTrigger] = useState('');
@@ -90,10 +90,16 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     const finalDuration = duration === 0 ? 45 : duration;
     const finalAuxiliaryDuration = auxiliaryDuration === 0 ? 15 : auxiliaryDuration;
 
+    // CRITICAL: 防止循环引用 - 不能把自己设为自己的父节点
+    let finalParentId = parentId;
+    if (chain && finalParentId === chain.id) {
+      console.warn('检测到循环引用，将parentId重置为undefined');
+      finalParentId = undefined;
+    }
     const chainData = {
       name: name.trim(),
       type,
-      parentId,
+      parentId: finalParentId,
       sortOrder,
       trigger: type === 'group' && !trigger ? '任务群容器' : (trigger === '自定义触发器' ? customTrigger.trim() : trigger),
       duration: finalDuration,

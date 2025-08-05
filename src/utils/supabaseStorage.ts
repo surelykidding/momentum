@@ -64,10 +64,17 @@ export class SupabaseStorage {
 
     // 准备upsert数据
     const upsertData = chains.map(chain => {
+      // CRITICAL: 防止循环引用
+      let parentId = chain.parentId || null;
+      if (parentId === chain.id) {
+        console.warn(`检测到循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为null`);
+        parentId = null;
+      }
+
       const data = {
         id: chain.id,
         name: chain.name,
-        parent_id: chain.parentId || null,
+        parent_id: parentId,
         type: chain.type || 'unit',
         sort_order: chain.sortOrder || Math.floor(Date.now() / 1000),
         trigger: chain.trigger,
