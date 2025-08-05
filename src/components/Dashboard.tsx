@@ -27,9 +27,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCancelScheduledSession,
   onDeleteChain,
 }) => {
+  console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
+  
   // 构建任务树并获取顶层任务
   const chainTree = buildChainTree(chains);
+  console.log('Dashboard - 构建的chainTree:', chainTree.length, chainTree.map(c => ({ id: c.id, name: c.name, type: c.type })));
+  
   const topLevelChains = getTopLevelChains(chainTree);
+  console.log('Dashboard - 顶层链条:', topLevelChains.length, topLevelChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
 
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
