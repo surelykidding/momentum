@@ -25,6 +25,7 @@ function App() {
   });
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Determine which storage to use based on authentication
   const [storage, setStorage] = useState(localStorageUtils);
@@ -43,20 +44,24 @@ function App() {
             const user = await Promise.race([getCurrentUser(), timeoutPromise]);
             if (user) {
               setStorage(supabaseStorage);
+              setIsInitialized(true);
               return;
             }
           } catch (networkError) {
             console.warn('Supabase connection failed, falling back to localStorage:', networkError);
             setStorage(localStorageUtils);
+            setIsInitialized(true);
             return;
           }
         }
         
         // 回退到本地存储
         setStorage(localStorageUtils);
+        setIsInitialized(true);
       } catch (error) {
         console.warn('Supabase not available, using localStorage:', error);
         setStorage(localStorageUtils);
+        setIsInitialized(true);
       }
     };
 
@@ -78,6 +83,25 @@ function App() {
   };
 
   const renderCurrentView = () => {
+    // 如果还没有初始化完成，显示加载状态
+    if (!isInitialized) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+            <h2 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100 mb-2">
+              正在初始化...
+            </h2>
+            <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
+              INITIALIZING APPLICATION
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     switch (state.currentView) {
       case 'editor':
         return (
@@ -221,6 +245,8 @@ function App() {
   // Load data from storage on mount
   useEffect(() => {
     const loadData = async () => {
+      if (!isInitialized) return;
+      
       try {
         const chains = await storage.getChains();
         const allScheduledSessions = await storage.getScheduledSessions();
@@ -248,13 +274,15 @@ function App() {
       }
     };
 
-    if (storage) {
+    if (storage && isInitialized) {
       loadData();
     }
-  }, [storage]);
+  }, [storage, isInitialized]);
 
   // Clean up expired scheduled sessions periodically
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const interval = setInterval(() => {
       setState(prev => {
         const expiredSessions = prev.scheduledSessions.filter(
@@ -276,7 +304,7 @@ function App() {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [storage]);
+  }, [storage, isInitialized]);
 
   const handleCreateChain = (parentId?: string) => {
     setState(prev => ({
