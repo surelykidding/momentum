@@ -7,6 +7,8 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   // 创建ID到节点的映射
   const nodeMap = new Map<string, ChainTreeNode>();
   
+  console.log('buildChainTree - 输入的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, parentId: c.parentId, type: c.type })));
+  
   // 初始化所有节点
   chains.forEach(chain => {
     nodeMap.set(chain.id, {
@@ -27,11 +29,14 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
       if (parent) {
         parent.children.push(node);
         node.depth = parent.depth + 1;
+        console.log(`节点 ${chain.name} 作为 ${parent.name} 的子节点`);
       } else {
         // 父节点不存在，作为根节点处理
+        console.log(`节点 ${chain.name} 的父节点不存在，作为根节点处理`);
         rootNodes.push(node);
       }
     } else {
+      console.log(`节点 ${chain.name} 是根节点`);
       rootNodes.push(node);
     }
   });
@@ -47,6 +52,7 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   // 对根节点也进行排序
   rootNodes.sort((a, b) => a.sortOrder - b.sortOrder);
 
+  console.log('buildChainTree - 构建的根节点:', rootNodes.length, rootNodes.map(r => ({ id: r.id, name: r.name, childrenCount: r.children.length })));
   return rootNodes;
 };
 
