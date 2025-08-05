@@ -63,6 +63,20 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('ChainEditor - 提交表单');
+    console.log('当前表单数据:', {
+      name: name.trim(),
+      type,
+      parentId,
+      sortOrder,
+      trigger,
+      duration,
+      description: description.trim(),
+      auxiliarySignal,
+      auxiliaryDuration,
+      auxiliaryCompletionTrigger: auxiliaryCompletionTrigger.trim()
+    });
+    
     // For group chains, only name and description are required
     if (type === 'group') {
       if (!name.trim() || !description.trim()) return;
@@ -76,7 +90,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     const finalDuration = duration === 0 ? 45 : duration;
     const finalAuxiliaryDuration = auxiliaryDuration === 0 ? 15 : auxiliaryDuration;
 
-    onSave({
+    const chainData = {
       name: name.trim(),
       type,
       parentId,
@@ -89,7 +103,15 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
       auxiliaryCompletionTrigger: type === 'group' && !auxiliaryCompletionTrigger ? '开始第一个子任务' : auxiliaryCompletionTrigger.trim(),
       exceptions: chain?.exceptions || [],
       auxiliaryExceptions: chain?.auxiliaryExceptions || [],
-    });
+    };
+    
+    console.log('ChainEditor - 即将保存的链条数据:', chainData);
+    console.log('ChainEditor - 是否为编辑模式:', !!chain);
+    if (chain) {
+      console.log('ChainEditor - 原始链条数据:', chain);
+    }
+    
+    onSave(chainData);
   };
 
   const handleTriggerSelect = (triggerText: string) => {

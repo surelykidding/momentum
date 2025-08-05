@@ -297,18 +297,26 @@ function App() {
 
   const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => {
     console.log('开始保存链数据...', chainData);
+    console.log('当前编辑的链:', state.editingChain);
+    console.log('当前所有链条:', state.chains.map(c => ({ id: c.id, name: c.name })));
+    
     try {
       let updatedChains: Chain[];
       
       if (state.editingChain) {
         // Editing existing chain
+        console.log('编辑模式 - 原始链条数据:', state.editingChain);
+        console.log('新的链条数据:', chainData);
+        
         updatedChains = state.chains.map(chain =>
           chain.id === state.editingChain!.id
             ? { ...chain, ...chainData }
             : chain
         );
         console.log('编辑现有链，更新后的链数组长度:', updatedChains.length);
-        console.log('编辑的链数据:', updatedChains.find(c => c.id === state.editingChain!.id));
+        const editedChain = updatedChains.find(c => c.id === state.editingChain!.id);
+        console.log('编辑后的链数据:', editedChain);
+        console.log('编辑后所有链条:', updatedChains.map(c => ({ id: c.id, name: c.name })));
       } else {
         // Creating new chain
         const newChain: Chain = {
@@ -340,9 +348,22 @@ function App() {
       console.log('数据保存成功，更新UI状态');
       
        // 验证数据是否真的保存成功
+       console.log('重新从存储读取数据进行验证...');
        const savedChains = await storage.getChains();
        console.log('验证保存结果，从存储读取到的链数量:', savedChains.length);
-       console.log('验证保存结果，详情:', savedChains.map(c => ({ id: c.id, name: c.name })));
+       console.log('验证保存结果，详情:', savedChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
+       
+       // 检查编辑的链条是否还存在
+       if (state.editingChain) {
+         const editedChainInSaved = savedChains.find(c => c.id === state.editingChain!.id);
+         console.log('编辑的链条在保存后的状态:', editedChainInSaved);
+         if (!editedChainInSaved) {
+           console.error('严重错误：编辑的链条在保存后丢失了！');
+           console.error('原始链条ID:', state.editingChain.id);
+           console.error('保存的链条IDs:', savedChains.map(c => c.id));
+           throw new Error('编辑的链条保存后丢失，操作被中止');
+         }
+       }
        
       // Only update state after successful save
       setState(prev => ({
@@ -356,7 +377,7 @@ function App() {
       console.error('Failed to save chain:', error);
       // 提供更详细的错误信息
       const errorMessage = error instanceof Error ? error.message : '未知错误';
-      alert(`保存失败: ${errorMessage}，请重试`);
+      alert(`保存失败: ${errorMessage}\n\n请查看控制台了解详细信息，然后重试`);
     }
   };
 

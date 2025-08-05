@@ -54,11 +54,30 @@ export class SupabaseStorage {
     }
 
     console.log('正在为用户保存链数据:', user.id, '链数量:', chains.length);
+    console.log('要保存的链条详情:', chains.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      type: c.type,
+      parentId: c.parentId,
+      sortOrder: c.sortOrder 
+    })));
 
-    // Use upsert to handle both insert and update operations
-    const { error: upsertError } = await supabase
+    // 先获取现有数据进行对比
+    const { data: existingChains, error: fetchError } = await supabase
       .from('chains')
-      .upsert(chains.map(chain => ({
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (fetchError) {
+      console.error('获取现有链数据失败:', fetchError);
+      throw new Error(`获取现有数据失败: ${fetchError.message}`);
+    }
+
+    console.log('现有链数据:', existingChains?.map(c => ({ id: c.id, name: c.name })) || []);
+
+    // 准备upsert数据
+    const upsertData = chains.map(chain => {
+      const data = {
         id: chain.id,
         name: chain.name,
         parent_id: chain.parentId || null,
@@ -80,30 +99,52 @@ export class SupabaseStorage {
         created_at: chain.createdAt.toISOString(),
         last_completed_at: chain.lastCompletedAt?.toISOString(),
         user_id: user.id,
-      })), {
+      };
+      console.log(`准备保存链条 ${chain.id} (${chain.name}):`, data);
+      return data;
+    });
+
+    // Use upsert to handle both insert and update operations
+    const { data: upsertResult, error: upsertError } = await supabase
+      .from('chains')
+      .upsert(upsertData, {
         onConflict: 'id',
         ignoreDuplicates: false
-      });
+      })
+      .select('id, name');
 
     if (upsertError) {
       console.error('保存链数据失败:', upsertError);
       throw new Error(`保存数据失败: ${upsertError.message}`);
     }
-    // Get existing chains to determine which should be deleted
-    const { data: existingChains, error: fetchError } = await supabase
+    
+    console.log('Upsert操作成功，返回数据:', upsertResult);
+    
+    // 验证所有链条都已保存
+    const savedIds = new Set((upsertResult || []).map(r => r.id));  
+    const expectedIds = new Set(chains.map(c => c.id));
+    const missingSavedIds = [...expectedIds].filter(id => !savedIds.has(id));
+    
+    if (missingSavedIds.length > 0) {
+      console.error('部分链条保存失败，缺失的IDs:', missingSavedIds);
+      throw new Error(`部分链条保存失败: ${missingSavedIds.join(', ')}`);
+    }
+    
+    // 再次获取现有链数据来确定哪些应该被删除
+    const { data: updatedExistingChains, error: updatedFetchError } = await supabase
       .from('chains')
-      .select('id')
+      .select('id, name')
       .eq('user_id', user.id);
 
-    if (fetchError) {
-      console.error('获取现有链数据失败:', fetchError);
+    if (updatedFetchError) {
+      console.error('获取更新后的链数据失败:', updatedFetchError);
       // Don't throw error here as upsert already succeeded
       console.warn('无法检查删除项，跳过删除步骤');
       return;
     }
 
     const currentIds = new Set(chains.map(c => c.id));
-    const toDelete = existingChains?.filter(c => !currentIds.has(c.id)) || [];
+    const toDelete = updatedExistingChains?.filter(c => !currentIds.has(c.id)) || [];
     
     if (toDelete.length > 0) {
       console.log('准备删除链:', toDelete.map(c => c.id));
@@ -118,6 +159,8 @@ export class SupabaseStorage {
         // Don't throw error as main operation succeeded
       }
       console.log('成功删除', toDelete.length, '条链');
+    } else {
+      console.log('没有需要删除的链条');
     }
 
     console.log('所有链数据保存成功');
