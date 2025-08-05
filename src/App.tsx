@@ -326,13 +326,13 @@ function App() {
   };
 
   const handleSaveChain = async (chainData: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => {
-    setState(prev => {
+    try {
       let updatedChains: Chain[];
       
-      if (prev.editingChain) {
+      if (state.editingChain) {
         // Editing existing chain
-        updatedChains = prev.chains.map(chain =>
-          chain.id === prev.editingChain!.id
+        updatedChains = state.chains.map(chain =>
+          chain.id === state.editingChain!.id
             ? { ...chain, ...chainData }
             : chain
         );
@@ -348,18 +348,24 @@ function App() {
           auxiliaryFailures: 0,
           createdAt: new Date(),
         };
-        updatedChains = [...prev.chains, newChain];
+        updatedChains = [...state.chains, newChain];
       }
       
-      storage.saveChains(updatedChains);
+      // Wait for data to be saved before updating UI
+      await storage.saveChains(updatedChains);
       
-      return {
+      // Only update state after successful save
+      setState(prev => ({
         ...prev,
         chains: updatedChains,
         currentView: 'dashboard',
         editingChain: null,
-      };
-    });
+      }));
+    } catch (error) {
+      console.error('Failed to save chain:', error);
+      // You could add error toast notification here
+      alert('保存失败，请重试');
+    }
   };
 
   const handleScheduleChain = (chainId: string) => {
