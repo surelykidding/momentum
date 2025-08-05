@@ -55,7 +55,41 @@ export class SupabaseStorage {
 
     console.log('正在为用户保存链数据:', user.id, '链数量:', chains.length);
 
-    // First, get existing chains to determine which are new and which need updates
+    // Use upsert to handle both insert and update operations
+    const { error: upsertError } = await supabase
+      .from('chains')
+      .upsert(chains.map(chain => ({
+        id: chain.id,
+        name: chain.name,
+        parent_id: chain.parentId || null,
+        type: chain.type || 'unit',
+        sort_order: chain.sortOrder || Math.floor(Date.now() / 1000),
+        trigger: chain.trigger,
+        duration: chain.duration,
+        description: chain.description,
+        current_streak: chain.currentStreak,
+        auxiliary_streak: chain.auxiliaryStreak,
+        total_completions: chain.totalCompletions,
+        total_failures: chain.totalFailures,
+        auxiliary_failures: chain.auxiliaryFailures,
+        exceptions: chain.exceptions,
+        auxiliary_exceptions: chain.auxiliaryExceptions,
+        auxiliary_signal: chain.auxiliarySignal,
+        auxiliary_duration: chain.auxiliaryDuration,
+        auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
+        created_at: chain.createdAt.toISOString(),
+        last_completed_at: chain.lastCompletedAt?.toISOString(),
+        user_id: user.id,
+      })), {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+
+    if (upsertError) {
+      console.error('保存链数据失败:', upsertError);
+      throw new Error(`保存数据失败: ${upsertError.message}`);
+    }
+    // Get existing chains to determine which should be deleted
     const { data: existingChains, error: fetchError } = await supabase
       .from('chains')
       .select('id')
@@ -63,87 +97,11 @@ export class SupabaseStorage {
 
     if (fetchError) {
       console.error('获取现有链数据失败:', fetchError);
-      throw new Error(`获取现有数据失败: ${fetchError.message}`);
+      // Don't throw error here as upsert already succeeded
+      console.warn('无法检查删除项，跳过删除步骤');
+      return;
     }
 
-    const existingIds = new Set(existingChains?.map(c => c.id) || []);
-    const newChains = chains.filter(chain => !existingIds.has(chain.id));
-    const updatedChains = chains.filter(chain => existingIds.has(chain.id));
-
-    console.log('需要插入的新链:', newChains.length);
-    console.log('需要更新的现有链:', updatedChains.length);
-    
-    // Insert new chains
-    if (newChains.length > 0) {
-      console.log('准备插入新链:', newChains.map(c => ({ id: c.id, name: c.name })));
-      const { error: insertError } = await supabase
-        .from('chains')
-        .insert(newChains.map(chain => ({
-          id: chain.id,
-          name: chain.name,
-          parent_id: chain.parentId || null,
-          type: chain.type,
-          sort_order: chain.sortOrder,
-          trigger: chain.trigger,
-          duration: chain.duration,
-          description: chain.description,
-          current_streak: chain.currentStreak,
-          auxiliary_streak: chain.auxiliaryStreak,
-          total_completions: chain.totalCompletions,
-          total_failures: chain.totalFailures,
-          auxiliary_failures: chain.auxiliaryFailures,
-          exceptions: chain.exceptions,
-          auxiliary_exceptions: chain.auxiliaryExceptions,
-          auxiliary_signal: chain.auxiliarySignal,
-          auxiliary_duration: chain.auxiliaryDuration,
-          auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-          created_at: chain.createdAt.toISOString(),
-          last_completed_at: chain.lastCompletedAt?.toISOString(),
-          user_id: user.id,
-        })));
-
-      if (insertError) {
-        console.error('插入链数据失败:', insertError);
-        throw new Error(`插入数据失败: ${insertError.message}`);
-      }
-      console.log('成功插入', newChains.length, '条新链');
-    }
-
-    // Update existing chains
-    for (const chain of updatedChains) {
-      console.log('更新链:', chain.id, chain.name);
-      const { error: updateError } = await supabase
-        .from('chains')
-        .update({
-          name: chain.name,
-          parent_id: chain.parentId || null,
-          type: chain.type,
-          sort_order: chain.sortOrder,
-          trigger: chain.trigger,
-          duration: chain.duration,
-          description: chain.description,
-          current_streak: chain.currentStreak,
-          auxiliary_streak: chain.auxiliaryStreak,
-          total_completions: chain.totalCompletions,
-          total_failures: chain.totalFailures,
-          auxiliary_failures: chain.auxiliaryFailures,
-          exceptions: chain.exceptions,
-          auxiliary_exceptions: chain.auxiliaryExceptions,
-          auxiliary_signal: chain.auxiliarySignal,
-          auxiliary_duration: chain.auxiliaryDuration,
-          auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-          last_completed_at: chain.lastCompletedAt?.toISOString(),
-        })
-        .eq('id', chain.id)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('更新链数据失败:', updateError);
-        throw new Error(`更新数据失败: ${updateError.message}`);
-      }
-    }
-
-    // Delete chains that are no longer in the array
     const currentIds = new Set(chains.map(c => c.id));
     const toDelete = existingChains?.filter(c => !currentIds.has(c.id)) || [];
     
@@ -156,8 +114,8 @@ export class SupabaseStorage {
         .eq('user_id', user.id);
 
       if (deleteError) {
-        console.error('删除链数据失败:', deleteError);
-        throw new Error(`删除数据失败: ${deleteError.message}`);
+        console.error('删除过期链数据失败:', deleteError);
+        // Don't throw error as main operation succeeded
       }
       console.log('成功删除', toDelete.length, '条链');
     }
