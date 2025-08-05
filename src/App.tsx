@@ -27,29 +27,12 @@ function App() {
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Determine which storage to use based on authentication
-  const [storage, setStorage] = useState(localStorageUtils);
-
-  // Initialize storage based on Supabase configuration
+  // Determine storage source immediately based on Supabase configuration
+  const storage = isSupabaseConfigured ? supabaseStorage : localStorageUtils;
+  
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        if (isSupabaseConfigured) {
-          console.log('Supabase 已配置，设置为 Supabase 存储');
-          setStorage(supabaseStorage);
-        } else {
-          console.log('Supabase 未配置，使用 LocalStorage');
-          setStorage(localStorageUtils);
-        }
-        setIsInitialized(true);
-      } catch (error) {
-        console.warn('初始化存储失败，回退到 localStorage:', error);
-        setStorage(localStorageUtils);
-        setIsInitialized(true);
-      }
-    };
-
-    initializeAuth();
+    console.log('存储源确定:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
+    setIsInitialized(true);
   }, []);
 
   const renderContent = () => {
@@ -229,9 +212,7 @@ function App() {
   // Load data from storage on mount
   useEffect(() => {
     const loadData = async () => {
-      if (!isInitialized) return;
-      
-      console.log('开始加载数据，使用存储类型:', storage === supabaseStorage ? 'Supabase' : 'LocalStorage');
+      console.log('开始加载数据，使用存储类型:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
       try {
         const chains = await storage.getChains();
         console.log('加载到的链数据:', chains.length, '条');
@@ -262,8 +243,8 @@ function App() {
       }
     };
 
-    if (storage && isInitialized) {
-      console.log('存储和初始化状态就绪，开始加载数据');
+    if (isInitialized) {
+      console.log('应用初始化完成，开始加载数据');
       loadData();
     }
   }, [storage, isInitialized]);
