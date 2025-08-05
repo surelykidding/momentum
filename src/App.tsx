@@ -215,6 +215,35 @@ function App() {
       console.log('开始加载数据，使用存储类型:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
       try {
         const chains = await storage.getChains();
+        
+        // 检查并修复循环引用的数据
+        const hasCircularReferences = chains.some(chain => chain.parentId === chain.id);
+        if (hasCircularReferences) {
+          console.log('检测到循环引用数据，正在修复...');
+          const fixedChains = chains.map(chain => {
+            if (chain.parentId === chain.id) {
+              console.log(`修复链条 ${chain.name} 的循环引用`);
+              return { ...chain, parentId: undefined };
+            }
+            return chain;
+          });
+          
+          // 将修复后的数据保存回数据库
+          await storage.saveChains(fixedChains);
+          console.log('循环引用数据修复完成并已保存');
+          
+          // 使用修复后的数据
+          setState(prev => ({
+            ...prev,
+            chains: fixedChains,
+            scheduledSessions: [],
+            activeSession: null,
+            completionHistory: [],
+            currentView: 'dashboard',
+          }));
+          return;
+        }
+        
         console.log('加载到的链数据:', chains.length, '条');
         console.log('链数据详情:', chains.map(c => ({ id: c.id, name: c.name })));
         const allScheduledSessions = await storage.getScheduledSessions();
