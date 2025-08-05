@@ -251,6 +251,7 @@ function App() {
       try {
         const chains = await storage.getChains();
         console.log('加载到的链数据:', chains.length, '条');
+        console.log('链数据详情:', chains.map(c => ({ id: c.id, name: c.name })));
         const allScheduledSessions = await storage.getScheduledSessions();
         const scheduledSessions = allScheduledSessions.filter(
           session => !isSessionExpired(session.expiresAt)
@@ -364,10 +365,15 @@ function App() {
       await storage.saveChains(updatedChains);
       console.log('数据保存成功，更新UI状态');
       
+       // 验证数据是否真的保存成功
+       const savedChains = await storage.getChains();
+       console.log('验证保存结果，从存储读取到的链数量:', savedChains.length);
+       console.log('验证保存结果，详情:', savedChains.map(c => ({ id: c.id, name: c.name })));
+       
       // Only update state after successful save
       setState(prev => ({
         ...prev,
-        chains: updatedChains,
+        chains: savedChains, // 使用从存储读取的数据，确保一致性
         currentView: 'dashboard',
         editingChain: null,
       }));

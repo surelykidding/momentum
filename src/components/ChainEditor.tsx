@@ -143,6 +143,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
             </div>
             <input
               type="text"
+              id="chain-name"
+              name="chainName"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="例如：学习Python、健身30分钟、无干扰写作"
@@ -163,6 +165,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               </div>
             </div>
             <select
+              id="chain-type"
+              name="chainType"
               value={type}
               onChange={(e) => setType(e.target.value as ChainType)}
               className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
@@ -202,6 +206,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="sacred-seat-trigger"
+                  name="sacredSeatTrigger"
                   value={trigger}
                   onChange={(e) => handleTriggerSelect(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
@@ -219,6 +225,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 {trigger === '自定义触发器' && (
                   <input
                     type="text"
+                    id="custom-trigger"
+                    name="customTrigger"
                     value={customTrigger}
                     onChange={(e) => setCustomTrigger(e.target.value)}
                     placeholder="输入你的自定义触发动作"
@@ -238,6 +246,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="task-duration"
+                  name="taskDuration"
                   value={isCustomDuration ? "custom" : duration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
@@ -264,6 +274,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
                       <input
                         type="range"
+                        id="duration-slider"
+                        name="durationSlider"
                         min="1"
                         max="300"
                         value={duration}
@@ -281,6 +293,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
                       <input
                         type="number"
+                        id="duration-input"
+                        name="durationInput"
                         min="1"
                         max="300"
                         value={duration === 0 ? '' : duration}
@@ -362,6 +376,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="auxiliary-signal"
+                  name="auxiliarySignal"
                   value={auxiliarySignal}
                   onChange={(e) => handleAuxiliarySignalSelect(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
@@ -379,6 +395,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 {auxiliarySignal === '自定义信号' && (
                   <input
                     type="text"
+                    id="custom-auxiliary-signal"
+                    name="customAuxiliarySignal"
                     value={customAuxiliarySignal}
                     onChange={(e) => setCustomAuxiliarySignal(e.target.value)}
                     placeholder="输入你的自定义预约信号"
@@ -398,6 +416,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="auxiliary-duration"
+                  name="auxiliaryDuration"
                   value={isCustomAuxiliaryDuration ? "custom" : auxiliaryDuration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
@@ -424,6 +444,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
                       <input
                         type="range"
+                        id="auxiliary-duration-slider"
+                        name="auxiliaryDurationSlider"
                         min="1"
                         max="120"
                         value={auxiliaryDuration}
@@ -441,6 +463,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
                       <input
                         type="number"
+                        id="auxiliary-duration-input"
+                        name="auxiliaryDurationInput"
                         min="1"
                         max="120"
                         value={auxiliaryDuration === 0 ? '' : auxiliaryDuration}
@@ -480,6 +504,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 </div>
                 <input
                   type="text"
+                  id="auxiliary-completion-trigger"
+                  name="auxiliaryCompletionTrigger"
                   value={auxiliaryCompletionTrigger}
                   onChange={(e) => setAuxiliaryCompletionTrigger(e.target.value)}
                   placeholder={type === 'group' ? '任务群的预约完成条件（可选）' : '例如：打开编程软件、坐到书房书桌前'}
@@ -508,6 +534,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               </div>
             </div>
             <textarea
+              id="task-description"
+              name="taskDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={
