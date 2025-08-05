@@ -24,6 +24,12 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   chains.forEach(chain => {
     const node = nodeMap.get(chain.id)!;
     
+    // CRITICAL: 防止循环引用 - 检查父节点是否就是自己
+    if (chain.parentId === chain.id) {
+      console.warn(`检测到循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，将作为根节点处理`);
+      rootNodes.push(node);
+      return;
+    }
     if (chain.parentId) {
       const parent = nodeMap.get(chain.parentId);
       if (parent) {
