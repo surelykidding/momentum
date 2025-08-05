@@ -9,8 +9,17 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   
   console.log('buildChainTree - 输入的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, parentId: c.parentId, type: c.type })));
   
+  // 修复循环引用：将自引用的链条的 parentId 设置为 undefined
+  const cleanedChains = chains.map(chain => {
+    if (chain.parentId === chain.id) {
+      console.warn(`修复循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为根节点`);
+      return { ...chain, parentId: undefined };
+    }
+    return chain;
+  });
+
   // 初始化所有节点
-  chains.forEach(chain => {
+  cleanedChains.forEach(chain => {
     nodeMap.set(chain.id, {
       ...chain,
       children: [],
@@ -21,15 +30,9 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   const rootNodes: ChainTreeNode[] = [];
 
   // 构建树结构
-  chains.forEach(chain => {
+  cleanedChains.forEach(chain => {
     const node = nodeMap.get(chain.id)!;
     
-    // CRITICAL: 防止循环引用 - 检查父节点是否就是自己
-    if (chain.parentId === chain.id) {
-      console.warn(`检测到循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，将作为根节点处理`);
-      rootNodes.push(node);
-      return;
-    }
     if (chain.parentId) {
       const parent = nodeMap.get(chain.parentId);
       if (parent) {
