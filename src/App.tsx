@@ -30,42 +30,26 @@ function App() {
   // Determine which storage to use based on authentication
   const [storage, setStorage] = useState(localStorageUtils);
 
-  // Check if user is authenticated and switch to Supabase storage
+  // Initialize storage based on Supabase configuration
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeAuth = async () => {
       try {
         if (isSupabaseConfigured) {
-          // Test Supabase connection with a timeout
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Connection timeout')), 5000);
-          });
-          
-          try {
-            const user = await Promise.race([getCurrentUser(), timeoutPromise]);
-            if (user) {
-              setStorage(supabaseStorage);
-              setIsInitialized(true);
-              return;
-            }
-          } catch (networkError) {
-            console.warn('Supabase connection failed, falling back to localStorage:', networkError);
-            setStorage(localStorageUtils);
-            setIsInitialized(true);
-            return;
-          }
+          console.log('Supabase 已配置，设置为 Supabase 存储');
+          setStorage(supabaseStorage);
+        } else {
+          console.log('Supabase 未配置，使用 LocalStorage');
+          setStorage(localStorageUtils);
         }
-        
-        // 回退到本地存储
-        setStorage(localStorageUtils);
         setIsInitialized(true);
       } catch (error) {
-        console.warn('Supabase not available, using localStorage:', error);
+        console.warn('初始化存储失败，回退到 localStorage:', error);
         setStorage(localStorageUtils);
         setIsInitialized(true);
       }
     };
 
-    checkAuth();
+    initializeAuth();
   }, []);
 
   const renderContent = () => {

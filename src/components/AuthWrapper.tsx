@@ -15,15 +15,29 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-      setAuthInitialized(true);
-    });
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('获取会话失败:', error);
+        }
+        console.log('初始会话检查:', session?.user ? '已登录' : '未登录');
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('会话初始化错误:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+        setAuthInitialized(true);
+      }
+    };
+
+    initSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('认证状态变化:', event, session?.user ? '已登录' : '未登录');
         setUser(session?.user ?? null);
         setLoading(false);
         setAuthInitialized(true);
