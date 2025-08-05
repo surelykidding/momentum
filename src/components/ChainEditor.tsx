@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Chain } from '../types';
+import { Chain, ChainType } from '../types';
 import { ArrowLeft, Save, Headphones, Code, BookOpen, Dumbbell, Coffee, Target, Clock, Bell } from 'lucide-react';
 
 interface ChainEditorProps {

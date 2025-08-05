@@ -308,6 +308,7 @@ function App() {
             : chain
         );
         console.log('编辑现有链，更新后的链数组长度:', updatedChains.length);
+        console.log('编辑的链数据:', updatedChains.find(c => c.id === state.editingChain!.id));
       } else {
         // Creating new chain
         const newChain: Chain = {
@@ -324,6 +325,14 @@ function App() {
         updatedChains = [...state.chains, newChain];
         console.log('添加新链后的链数组长度:', updatedChains.length);
       }
+      
+      // 确保所有链都有必需的字段
+      updatedChains = updatedChains.map(chain => ({
+        ...chain,
+        type: chain.type || 'unit',
+        sortOrder: chain.sortOrder || Math.floor(Date.now() / 1000),
+        parentId: chain.parentId || undefined,
+      }));
       
       console.log('准备保存到存储...');
       // Wait for data to be saved before updating UI
