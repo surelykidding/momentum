@@ -41,8 +41,8 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
         console.log(`节点 ${chain.name} 作为 ${parent.name} 的子节点`);
       } else {
         // 父节点不存在，作为根节点处理
-        console.log(`节点 ${chain.name} 的父节点不存在，作为根节点处理`);
-        rootNodes.push(node);
+        console.warn(`父节点 ${chain.parentId} 不存在，节点 ${chain.name} (${chain.id}) 将不会被添加到树中`);
+        // Do not push to rootNodes
       }
     } else {
       console.log(`节点 ${chain.name} 是根节点`);
