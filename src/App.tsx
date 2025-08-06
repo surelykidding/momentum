@@ -26,6 +26,7 @@ function App() {
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Determine storage source immediately based on Supabase configuration
   const storage = isSupabaseConfigured ? supabaseStorage : localStorageUtils;
@@ -189,6 +190,7 @@ function App() {
             <Dashboard
               chains={state.chains}
               scheduledSessions={state.scheduledSessions}
+              isLoading={isLoadingData}
               onCreateChain={handleCreateChain}
               onStartChain={handleStartChain}
               onScheduleChain={handleScheduleChain}
@@ -213,6 +215,7 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       console.log('开始加载数据，使用存储类型:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
+      setIsLoadingData(true);
       try {
         const chains = await storage.getChains();
         
@@ -269,12 +272,16 @@ function App() {
         }
       } catch (error) {
         console.error('加载数据失败:', error);
+      } finally {
+        setIsLoadingData(false);
       }
     };
 
     if (isInitialized) {
       console.log('应用初始化完成，开始加载数据');
       loadData();
+    } else {
+      setIsLoadingData(false);
     }
   }, [storage, isInitialized]);
 

@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react';
 interface DashboardProps {
   chains: Chain[];
   scheduledSessions: ScheduledSession[];
+  isLoading?: boolean;
   onCreateChain: () => void;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
@@ -20,6 +21,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   chains,
   scheduledSessions,
+  isLoading = false,
   onCreateChain,
   onStartChain,
   onScheduleChain,
@@ -70,6 +72,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </header>
 
+        {isLoading ? (
+          <div className="text-center py-20 animate-slide-up">
+            <div className="bento-card max-w-lg mx-auto">
+              <div className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-3xl font-bold font-chinese text-gray-900 dark:text-slate-100 mb-4">
+                正在加载任务链...
+              </h2>
+              <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
+                正在从云端同步您的数据
+              </p>
+            </div>
+          </div>
+        ) : (
         {chains.length === 0 ? (
           <div className="text-center py-20 animate-slide-up">
             <div className="bento-card max-w-lg mx-auto">
@@ -139,6 +156,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ))}
             </div>
           </div>
+        )}
         )}
       </div>
     </div>
