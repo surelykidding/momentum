@@ -36,10 +36,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const topLevelChains = getTopLevelChains(chainTree);
   console.log('Dashboard - 顶层链条:', topLevelChains.length, topLevelChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
 
-  // 创建一个函数来获取最新的链条数据
-  const getLatestChainData = (chainId: string) => {
-    return chains.find(c => c.id === chainId);
-  };
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
   };
@@ -120,7 +116,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 chainNode.type === 'group' ? (
                   <GroupCard
                     key={chainNode.id}
-                    group={{...chainNode, ...(getLatestChainData(chainNode.id) || {})}}
+                    group={chainNode}
                     scheduledSession={getScheduledSession(chainNode.id)}
                     onStartChain={onStartChain}
                     onScheduleChain={onScheduleChain}
@@ -131,7 +127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 ) : (
                   <ChainCard
                     key={chainNode.id}
-                    chain={{...chainNode, ...(getLatestChainData(chainNode.id) || {})}}
+                    chain={chainNode}
                     scheduledSession={getScheduledSession(chainNode.id)}
                     onStartChain={onStartChain}
                     onScheduleChain={onScheduleChain}

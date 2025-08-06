@@ -376,28 +376,10 @@ function App() {
       await storage.saveChains(updatedChains);
       console.log('数据保存成功，更新UI状态');
       
-       // 验证数据是否真的保存成功
-       console.log('重新从存储读取数据进行验证...');
-       const savedChains = await storage.getChains();
-       console.log('验证保存结果，从存储读取到的链数量:', savedChains.length);
-       console.log('验证保存结果，详情:', savedChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
-       
-       // 检查编辑的链条是否还存在
-       if (state.editingChain) {
-         const editedChainInSaved = savedChains.find(c => c.id === state.editingChain!.id);
-         console.log('编辑的链条在保存后的状态:', editedChainInSaved);
-         if (!editedChainInSaved) {
-           console.error('严重错误：编辑的链条在保存后丢失了！');
-           console.error('原始链条ID:', state.editingChain.id);
-           console.error('保存的链条IDs:', savedChains.map(c => c.id));
-           throw new Error('编辑的链条保存后丢失，操作被中止');
-         }
-       }
-       
       // Only update state after successful save
       setState(prev => ({
         ...prev,
-        chains: savedChains, // 使用从存储读取的数据，确保一致性
+        chains: updatedChains,
         currentView: 'dashboard',
         editingChain: null,
       }));
@@ -407,6 +389,17 @@ function App() {
       // 提供更详细的错误信息
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       alert(`保存失败: ${errorMessage}\n\n请查看控制台了解详细信息，然后重试`);
+      
+      // 如果保存失败，重新加载数据以确保状态一致性
+      try {
+        const currentChains = await storage.getChains();
+        setState(prev => ({
+          ...prev,
+          chains: currentChains,
+        }));
+      } catch (reloadError) {
+        console.error('重新加载数据也失败了:', reloadError);
+      }
     }
   };
 
