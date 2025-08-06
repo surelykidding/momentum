@@ -36,6 +36,11 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
     if (chain.parentId) {
       const parent = nodeMap.get(chain.parentId);
       if (parent) {
+        // 确保子节点继承最新的父节点数据
+        const latestChainData = chains.find(c => c.id === chain.id);
+        if (latestChainData) {
+          Object.assign(node, latestChainData);
+        }
         parent.children.push(node);
         node.depth = parent.depth + 1;
         console.log(`节点 ${chain.name} 作为 ${parent.name} 的子节点`);

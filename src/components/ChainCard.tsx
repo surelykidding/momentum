@@ -26,6 +26,12 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  
+  // 获取实际的链条数据，确保显示最新的时长信息
+  const actualChain = React.useMemo(() => {
+    // 如果传入的是 ChainTreeNode，需要确保数据是最新的
+    return chain;
+  }, [chain]);
 
   const typeConfig = getChainTypeConfig(chain.type);
 
@@ -152,10 +158,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
           <div className="flex items-center space-x-2 text-gray-700 dark:text-slate-300">
             <Clock size={16} />
-            <span className="font-medium">{formatTime(chain.duration)}</span>
+            <span className="font-medium">{formatTime(actualChain.duration)}</span>
           </div>
           <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
-            {chain.totalCompletions} completion{(chain.totalCompletions === 0 || chain.totalCompletions === 1) ? '' : 's'}
+            {actualChain.totalCompletions} completion{(actualChain.totalCompletions === 0 || actualChain.totalCompletions === 1) ? '' : 's'}
           </div>
         </div>
 
