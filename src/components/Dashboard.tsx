@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         ) : (
-        {chains.length === 0 ? (
+        chains.length === 0 ? (
           <div className="text-center py-20 animate-slide-up">
             <div className="bento-card max-w-lg mx-auto">
               <div className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 shadow-2xl">
@@ -156,7 +156,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ))}
             </div>
           </div>
-        )}
         )}
       </div>
     </div>
