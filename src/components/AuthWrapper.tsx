@@ -39,13 +39,15 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       (event, session) => {
         console.log('认证状态变化:', event, session?.user ? '已登录' : '未登录');
         setUser(session?.user ?? null);
-        setLoading(false);
-        setAuthInitialized(true);
+        if (!authInitialized) {
+          setLoading(false);
+          setAuthInitialized(true);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [authInitialized]);
 
   if (loading || !authInitialized) {
     return (
