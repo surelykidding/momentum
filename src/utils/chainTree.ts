@@ -117,7 +117,7 @@ export const getChainTypeConfig = (type: Chain['type']) => {
   const configs = {
     unit: { icon: 'fas fa-link', color: 'text-gray-500', bgColor: 'bg-gray-500/10', name: '基础单元' },
     group: { icon: 'fas fa-layer-group', color: 'text-blue-500', bgColor: 'bg-blue-500/10', name: '任务群' },
-    assault: { icon: 'fas fa-sword', color: 'text-red-500', bgColor: 'bg-red-500/10', name: '突击单元' },
+    assault: { icon: 'fas fa-bolt', color: 'text-red-500', bgColor: 'bg-red-500/10', name: '突击单元' },
     recon: { icon: 'fas fa-search', color: 'text-green-500', bgColor: 'bg-green-500/10', name: '侦查单元' },
     command: { icon: 'fas fa-chess-king', color: 'text-purple-500', bgColor: 'bg-purple-500/10', name: '指挥单元' },
     special_ops: { icon: 'fas fa-tools', color: 'text-yellow-500', bgColor: 'bg-yellow-500/10', name: '特勤单元' },
