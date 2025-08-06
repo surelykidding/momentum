@@ -108,18 +108,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
               <div className={`w-8 h-8 rounded-xl ${typeConfig.bgColor} flex items-center justify-center`}>
                 <i className={`${typeConfig.icon} ${typeConfig.color} text-sm`}></i>
               </div>
-              <div className={`w-8 h-8 rounded-xl ${typeConfig.bgColor} flex items-center justify-center`}>
-                <i className={`${typeConfig.icon} ${typeConfig.color} text-sm`}></i>
-              </div>
               <div>
                 <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100 group-hover:text-primary-500 transition-colors">
                   {chain.name}
                 </h3>
-                {chain.type !== 'unit' && (
-                  <p className="text-xs font-mono text-gray-500 tracking-wide">
-                    {typeConfig.name}
-                  </p>
-                )}
                 {chain.type !== 'unit' && (
                   <p className="text-xs font-mono text-gray-500 tracking-wide">
                     {typeConfig.name}
