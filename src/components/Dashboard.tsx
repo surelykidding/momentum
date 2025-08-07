@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { Plus, Download } from 'lucide-react';
+import { notificationManager } from '../utils/notifications';
 
 interface DashboardProps {
   chains: Chain[];
@@ -33,6 +34,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onImportChains,
 }) => {
   const [showImportExport, setShowImportExport] = React.useState(false);
+  const [notificationPermission, setNotificationPermission] = React.useState<NotificationPermission>('default');
   
   console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
   
@@ -45,6 +47,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
+  };
+
+  // 检查通知权限
+  React.useEffect(() => {
+    if (notificationManager.isSupported()) {
+      setNotificationPermission(notificationManager.getPermission());
+    }
+  }, []);
+
+  // 请求通知权限
+  const handleRequestNotificationPermission = async () => {
+    const granted = await notificationManager.requestPermission();
+    setNotificationPermission(granted ? 'granted' : 'denied');
   };
 
   return (
@@ -69,6 +84,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
           </div>
+          
+          {/* 通知权限提示 */}
+          {notificationManager.isSupported() && notificationPermission !== 'granted' && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <i className="fas fa-bell text-blue-500"></i>
+                    <div className="text-left">
+                      <p className="text-blue-700 dark:text-blue-300 font-medium font-chinese">
+                        启用桌面通知
+                      </p>
+                      <p className="text-blue-600 dark:text-blue-400 text-sm font-chinese">
+                        获取任务完成和预约提醒通知
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRequestNotificationPermission}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-chinese transition-colors"
+                  >
+                    启用通知
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <p className="text-gray-700 dark:text-slate-300 max-w-3xl mx-auto text-lg leading-relaxed font-chinese">
             基于链式时延协议理论，通过<span className="font-semibold text-primary-500">神圣座位原理</span>、
             <span className="font-semibold text-primary-500">下必为例原理</span>和
