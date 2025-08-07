@@ -1,33 +1,39 @@
 import React from 'react';
 import { ChainTreeNode, ScheduledSession } from '../types';
-import { ArrowLeft, Play, Plus, Users, Target } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Users, Target, Import } from 'lucide-react';
 import { getGroupProgress, getNextUnitInGroup, getChainTypeConfig } from '../utils/chainTree';
 import { formatTime } from '../utils/time';
+import { ImportUnitsModal } from './ImportUnitsModal';
 
 interface GroupViewProps {
   group: ChainTreeNode;
   scheduledSessions: ScheduledSession[];
+  availableUnits: ChainTreeNode[]; // 可导入的单元
   onBack: () => void;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
   onEditChain: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
   onAddUnit: () => void;
+  onImportUnits: (unitIds: string[], groupId: string) => void;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({
   group,
   scheduledSessions,
+  availableUnits,
   onBack,
   onStartChain,
   onScheduleChain,
   onEditChain,
   onDeleteChain,
   onAddUnit,
+  onImportUnits,
 }) => {
   const progress = getGroupProgress(group);
   const nextUnit = getNextUnitInGroup(group);
   const typeConfig = getChainTypeConfig(group.type);
+  const [showImportModal, setShowImportModal] = React.useState(false);
 
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
@@ -166,6 +172,14 @@ export const GroupView: React.FC<GroupViewProps> = ({
               <span>添加单元</span>
             </button>
             
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 font-chinese"
+            >
+              <Import size={16} />
+              <span>导入单元</span>
+            </button>
+            
             {nextUnit && (
               <button
                 onClick={() => onStartChain(nextUnit.id)}
@@ -244,6 +258,16 @@ export const GroupView: React.FC<GroupViewProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Import Units Modal */}
+      {showImportModal && (
+        <ImportUnitsModal
+          availableUnits={availableUnits}
+          groupId={group.id}
+          onImport={onImportUnits}
+          onClose={() => setShowImportModal(false)}
+        />
+      )}
     </div>
   );
 };
