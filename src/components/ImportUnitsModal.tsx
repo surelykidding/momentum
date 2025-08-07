@@ -19,6 +19,7 @@ export const ImportUnitsModal: React.FC<ImportUnitsModalProps> = ({
 }) => {
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [importMode, setImportMode] = useState<'move' | 'copy'>('copy');
 
   // 过滤可导入的单元（排除群组类型和已经有父节点的单元）
   const importableUnits = availableUnits.filter(unit => 
@@ -39,7 +40,7 @@ export const ImportUnitsModal: React.FC<ImportUnitsModalProps> = ({
 
   const handleImport = () => {
     if (selectedUnits.size > 0) {
-      onImport(Array.from(selectedUnits), groupId);
+      onImport(Array.from(selectedUnits), groupId, importMode);
       onClose();
     }
   };
@@ -70,6 +71,44 @@ export const ImportUnitsModal: React.FC<ImportUnitsModalProps> = ({
           </button>
         </div>
 
+        {/* Import Mode Selection */}
+        <div className="mb-6">
+          <h3 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100 mb-4">导入模式</h3>
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="radio"
+                name="importMode"
+                value="copy"
+                checked={importMode === 'copy'}
+                onChange={(e) => setImportMode(e.target.value as 'move' | 'copy')}
+                className="w-5 h-5 text-blue-500 focus:ring-blue-500 focus:ring-2"
+              />
+              <div>
+                <span className="text-blue-600 dark:text-blue-400 font-medium font-chinese">复制模式</span>
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-chinese">
+                  创建副本加入任务群，原单元保持独立
+                </p>
+              </div>
+            </label>
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="radio"
+                name="importMode"
+                value="move"
+                checked={importMode === 'move'}
+                onChange={(e) => setImportMode(e.target.value as 'move' | 'copy')}
+                className="w-5 h-5 text-green-500 focus:ring-green-500 focus:ring-2"
+              />
+              <div>
+                <span className="text-green-600 dark:text-green-400 font-medium font-chinese">移动模式</span>
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-chinese">
+                  将单元移入任务群，不再独立显示
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
@@ -172,7 +211,7 @@ export const ImportUnitsModal: React.FC<ImportUnitsModalProps> = ({
         {/* Actions */}
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600 dark:text-slate-400 font-chinese">
-            已选择 {selectedUnits.size} 个任务单元
+            已选择 {selectedUnits.size} 个任务单元 ({importMode === 'copy' ? '复制模式' : '移动模式'})
           </div>
           <div className="flex space-x-3">
             <button

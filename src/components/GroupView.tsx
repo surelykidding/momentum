@@ -15,7 +15,7 @@ interface GroupViewProps {
   onEditChain: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
   onAddUnit: () => void;
-  onImportUnits: (unitIds: string[], groupId: string) => void;
+  onImportUnits: (unitIds: string[], groupId: string, mode?: 'move' | 'copy') => void;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({

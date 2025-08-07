@@ -830,17 +830,45 @@ function App() {
     }
   };
 
-  const handleImportUnits = async (unitIds: string[], groupId: string) => {
-    console.log('开始导入单元到任务群...', { unitIds, groupId });
+  const handleImportUnits = async (unitIds: string[], groupId: string, mode: 'move' | 'copy' = 'copy') => {
+    console.log('开始导入单元到任务群...', { unitIds, groupId, mode });
     
     try {
-      // 更新选中单元的 parentId 为目标任务群的 ID
-      const updatedChains = state.chains.map(chain => {
-        if (unitIds.includes(chain.id)) {
-          return { ...chain, parentId: groupId };
-        }
-        return chain;
-      });
+      let updatedChains: Chain[];
+      
+      if (mode === 'copy') {
+        // 复制模式：创建副本并加入任务群，原单元保持独立
+        const copiesToAdd: Chain[] = [];
+        
+        state.chains.forEach(chain => {
+          if (unitIds.includes(chain.id)) {
+            const copy: Chain = {
+              ...chain,
+              id: crypto.randomUUID(), // 生成新的ID
+              name: `${chain.name} (副本)`, // 添加副本标识
+              parentId: groupId,
+              currentStreak: 0, // 重置记录
+              auxiliaryStreak: 0,
+              totalCompletions: 0,
+              totalFailures: 0,
+              auxiliaryFailures: 0,
+              createdAt: new Date(),
+              lastCompletedAt: undefined,
+            };
+            copiesToAdd.push(copy);
+          }
+        });
+        
+        updatedChains = [...state.chains, ...copiesToAdd];
+      } else {
+        // 移动模式：更新选中单元的 parentId 为目标任务群的 ID
+        updatedChains = state.chains.map(chain => {
+          if (unitIds.includes(chain.id)) {
+            return { ...chain, parentId: groupId };
+          }
+          return chain;
+        });
+      }
       
       console.log('准备保存导入后的数据到存储...');
       // Wait for data to be saved before updating UI
