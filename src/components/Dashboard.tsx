@@ -108,13 +108,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p className="text-gray-700 dark:text-slate-300 mb-8 leading-relaxed">
                 链代表你想要持续做的任务。每次成功完成，你的记录就会增长一点。
               </p>
-              <button
-                onClick={onCreateChain}
-                className="gradient-primary hover:shadow-2xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-3 mx-auto hover:scale-105 shadow-xl"
-              >
-                <i className="fas fa-plus text-lg"></i>
-                <span className="font-chinese font-semibold">创建第一条链</span>
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button
+                  onClick={onCreateChain}
+                  className="gradient-primary hover:shadow-2xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-3 hover:scale-105 shadow-xl"
+                >
+                  <i className="fas fa-plus text-lg"></i>
+                  <span className="font-chinese font-semibold">创建第一条链</span>
+                </button>
+                <button
+                  onClick={() => setShowImportExport(true)}
+                  className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+                >
+                  <Download size={16} />
+                  <span className="font-chinese font-medium">数据管理</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (
