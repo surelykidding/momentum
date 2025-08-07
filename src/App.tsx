@@ -310,14 +310,16 @@ function App() {
           });
           
           // Show auxiliary judgment for the first expired session
-          setShowAuxiliaryJudgment(expiredSessions[0].chainId);
+          if (expiredSessions.length > 0) {
+            setShowAuxiliaryJudgment(expiredSessions[0].chainId);
+          }
           storage.saveScheduledSessions(activeScheduledSessions);
           return { ...prev, scheduledSessions: activeScheduledSessions };
         }
         
         return prev;
       });
-    }, 30000); // Check every 30 seconds
+    }, 10000); // Check every 10 seconds for better responsiveness
 
     return () => clearInterval(interval);
   }, [storage, isInitialized]);

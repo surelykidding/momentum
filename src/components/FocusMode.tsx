@@ -19,6 +19,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   onAddException,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
   const [showInterruptWarning, setShowInterruptWarning] = useState(false);
   const [interruptReason, setInterruptReason] = useState('');
   const [selectedExistingRule, setSelectedExistingRule] = useState('');
@@ -44,6 +45,13 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       const remaining = calculateTimeRemaining();
       setTimeRemaining(remaining);
       
+      // 剩余2分钟时显示警告通知
+      if (remaining <= 120 && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.max(1, Math.ceil(remaining / 60));
+        notificationManager.notifyTaskWarning(chain.name, `${minutes}分钟`);
+      }
+      
       if (remaining <= 0) {
         onComplete();
       }
@@ -53,6 +61,11 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [session, onComplete]);
+
+  // 重置警告状态当会话改变时
+  React.useEffect(() => {
+    setHasShownWarning(false);
+  }, [session.startedAt, session.chainId]);
 
   const progress = ((session.duration * 60 - timeRemaining) / (session.duration * 60)) * 100;
 

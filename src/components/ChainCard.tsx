@@ -45,9 +45,9 @@ export const ChainCard: React.FC<ChainCardProps> = ({
       setTimeRemaining(remaining);
       
       // 剩余5分钟时显示警告通知
-      if (remaining <= 300 && remaining > 0 && !hasShownWarning) {
+      if (remaining <= 120 && remaining > 0 && !hasShownWarning) {
         setHasShownWarning(true);
-        const minutes = Math.ceil(remaining / 60);
+        const minutes = Math.max(1, Math.ceil(remaining / 60));
         notificationManager.notifyScheduleWarning(
           chain.name, 
           `${minutes}分钟`
@@ -68,7 +68,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   // 重置警告状态当预约会话改变时
   React.useEffect(() => {
     setHasShownWarning(false);
-  }, [scheduledSession?.scheduledAt]);
+  }, [scheduledSession?.scheduledAt, scheduledSession?.chainId]);
 
   const isScheduled = scheduledSession && timeRemaining > 0;
 

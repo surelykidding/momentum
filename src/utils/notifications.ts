@@ -106,7 +106,7 @@ class NotificationManager {
    */
   async showNotification(options: NotificationOptions): Promise<Notification | null> {
     if (!this.isNotificationsEnabled()) {
-      console.warn('没有通知权限，无法显示通知');
+      console.warn('通知未启用或没有权限，无法显示通知');
       return null;
     }
 
@@ -117,18 +117,32 @@ class NotificationManager {
         tag: options.tag,
         requireInteraction: options.requireInteraction || false,
         silent: options.silent || false,
+        timestamp: Date.now(), // 添加时间戳确保通知唯一性
       });
+
+      // 添加点击事件处理
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
 
       // 自动关闭通知（除非需要用户交互）
       if (!options.requireInteraction) {
         setTimeout(() => {
-          notification.close();
+          if (notification) {
+            notification.close();
+          }
         }, 5000);
       }
 
       return notification;
     } catch (error) {
       console.error('显示通知失败:', error);
+      // 尝试重新请求权限
+      if (error.name === 'NotAllowedError') {
+        console.log('通知权限被拒绝，尝试重新请求权限');
+        await this.requestPermission();
+      }
       return null;
     }
   }
@@ -149,13 +163,28 @@ class NotificationManager {
   }
 
   /**
+   * 任务即将结束通知（剩余2分钟）
+   */
+  async notifyTaskWarning(chainName: string, timeRemaining: string) {
+    if (!this.isNotificationsEnabled()) return null;
+    
+    return this.showNotification({
+      title: '任务即将结束',
+      body: `"${chainName}"还剩${timeRemaining}，请继续保持专注！`,
+      icon: '/vite.svg',
+      tag: 'task-warning',
+      requireInteraction: false,
+    });
+  }
+
+  /**
    * 预约即将到期通知（剩余5分钟）
    */
   async notifyScheduleWarning(chainName: string, timeRemaining: string) {
     if (!this.isNotificationsEnabled()) return null;
     
     return this.showNotification({
-      title: '预约即将到期',
+      title: '预约即将到期', 
       body: `"${chainName}"预约还剩${timeRemaining}，请准备开始任务！`,
       icon: '/vite.svg',
       tag: 'schedule-warning',
