@@ -197,6 +197,7 @@ function App() {
               onViewChainDetail={handleViewChainDetail}
               onCancelScheduledSession={handleCancelScheduledSession}
               onDeleteChain={handleDeleteChain}
+              onImportChains={handleImportChains}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
@@ -770,6 +771,42 @@ function App() {
     });
   };
 
+  const handleImportChains = async (importedChains: Chain[]) => {
+    console.log('开始导入链数据...', importedChains);
+    
+    try {
+      // 合并导入的链条到现有链条中
+      const updatedChains = [...state.chains, ...importedChains];
+      
+      console.log('准备保存导入的数据到存储...');
+      // Wait for data to be saved before updating UI
+      await storage.saveChains(updatedChains);
+      console.log('导入数据保存成功，更新UI状态');
+      
+      // Only update state after successful save
+      setState(prev => ({
+        ...prev,
+        chains: updatedChains,
+      }));
+      console.log('导入完成，UI状态更新完成');
+    } catch (error) {
+      console.error('Failed to import chains:', error);
+      // 提供更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`导入失败: ${errorMessage}\n\n请查看控制台了解详细信息，然后重试`);
+      
+      // 如果导入失败，重新加载数据以确保状态一致性
+      try {
+        const currentChains = await storage.getChains();
+        setState(prev => ({
+          ...prev,
+          chains: currentChains,
+        }));
+      } catch (reloadError) {
+        console.error('重新加载数据也失败了:', reloadError);
+      }
+    }
+  };
   return renderContent();
 }
 
