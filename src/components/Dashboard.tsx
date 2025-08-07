@@ -1,12 +1,15 @@
 import React from 'react';
 import { Chain, ScheduledSession } from '../types';
 import { ChainCard } from './ChainCard';
+import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
+import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { Plus } from 'lucide-react';
 
 interface DashboardProps {
   chains: Chain[];
   scheduledSessions: ScheduledSession[];
+  isLoading?: boolean;
   onCreateChain: () => void;
   onImportChain: (file: File) => void;
   onStartChain: (chainId: string) => void;
@@ -20,6 +23,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   chains,
   scheduledSessions,
+  isLoading = false,
   onCreateChain,
   onImportChain,
   onStartChain,
@@ -29,6 +33,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onDeleteChain,
   onExportChain,
 }) => {
+  console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
+  
+  // 构建任务树并获取顶层任务
+  const chainTree = buildChainTree(chains);
+  console.log('Dashboard - 构建的chainTree:', chainTree.length, chainTree.map(c => ({ id: c.id, name: c.name, type: c.type })));
+  
+  const topLevelChains = getTopLevelChains(chainTree);
+  console.log('Dashboard - 顶层链条:', topLevelChains.length, topLevelChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
+
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
   };
@@ -83,7 +96,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </header>
 
-        {chains.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20 animate-slide-up">
+            <div className="bento-card max-w-lg mx-auto">
+              <div className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-3xl font-bold font-chinese text-gray-900 dark:text-slate-100 mb-4">
+                正在加载任务链...
+              </h2>
+              <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
+                正在从云端同步您的数据
+              </p>
+            </div>
+          </div>
+        ) : (
+        chains.length === 0 ? (
           <div className="text-center py-20 animate-slide-up">
             <div className="bento-card max-w-lg mx-auto">
               <div className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 shadow-2xl">
@@ -143,22 +171,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {chains.map(chain => (
-                <ChainCard
-                  key={chain.id}
-                  chain={chain}
-                  scheduledSession={getScheduledSession(chain.id)}
-                  onStartChain={onStartChain}
-                  onScheduleChain={onScheduleChain}
-                  onViewDetail={onViewChainDetail}
-                  onCancelScheduledSession={onCancelScheduledSession}
-                  onDelete={onDeleteChain}
-                  onExport={onExportChain}
-                />
+              {topLevelChains.map(chainNode => (
+                chainNode.type === 'group' ? (
+                  <GroupCard
+                    key={chainNode.id}
+                    group={chainNode}
+                    scheduledSession={getScheduledSession(chainNode.id)}
+                    onStartChain={onStartChain}
+                    onScheduleChain={onScheduleChain}
+                    onViewDetail={onViewChainDetail}
+                    onCancelScheduledSession={onCancelScheduledSession}
+                    onDelete={onDeleteChain}
+                  />
+                ) : (
+                  <ChainCard
+                    key={chainNode.id}
+                    chain={chainNode}
+                    scheduledSession={getScheduledSession(chainNode.id)}
+                    onStartChain={onStartChain}
+                    onScheduleChain={onScheduleChain}
+                    onViewDetail={onViewChainDetail}
+                    onCancelScheduledSession={onCancelScheduledSession}
+                    onDelete={onDeleteChain}
+                    onExport={onExportChain}
+                  />
+                )
               ))}
             </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

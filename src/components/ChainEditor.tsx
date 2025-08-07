@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Chain } from '../types';
+import { Chain, ChainType } from '../types';
 import { ArrowLeft, Save, Headphones, Code, BookOpen, Dumbbell, Coffee, Target, Clock, Bell } from 'lucide-react';
 
 interface ChainEditorProps {
   chain?: Chain;
   isEditing: boolean;
+  initialParentId?: string;
   onSave: (chain: Omit<Chain, 'id' | 'currentStreak' | 'auxiliaryStreak' | 'totalCompletions' | 'totalFailures' | 'auxiliaryFailures' | 'createdAt' | 'lastCompletedAt'>) => void;
   onCancel: () => void;
 }
@@ -32,10 +33,14 @@ const DURATION_PRESETS = [25, 30, 45, 60, 90, 120];
 export const ChainEditor: React.FC<ChainEditorProps> = ({
   chain,
   isEditing,
+  initialParentId,
   onSave,
   onCancel,
 }) => {
   const [name, setName] = useState(chain?.name || '');
+  const [type, setType] = useState<ChainType>(chain?.type || 'unit');
+  const [parentId, setParentId] = useState(chain?.parentId || initialParentId || undefined);
+  const [sortOrder, setSortOrder] = useState(chain?.sortOrder || Math.floor(Date.now() / 1000));
   const [trigger, setTrigger] = useState(chain?.trigger || '');
   const [customTrigger, setCustomTrigger] = useState('');
   const [duration, setDuration] = useState(chain?.duration || 45);
@@ -57,24 +62,62 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !trigger.trim() || !description.trim() || 
-        !auxiliarySignal.trim() || !auxiliaryCompletionTrigger.trim()) return;
+    
+    console.log('ChainEditor - 提交表单');
+    console.log('当前表单数据:', {
+      name: name.trim(),
+      type,
+      parentId,
+      sortOrder,
+      trigger,
+      duration,
+      description: description.trim(),
+      auxiliarySignal,
+      auxiliaryDuration,
+      auxiliaryCompletionTrigger: auxiliaryCompletionTrigger.trim()
+    });
+    
+    // For group chains, only name and description are required
+    if (type === 'group') {
+      if (!name.trim() || !description.trim()) return;
+    } else {
+      // For other chain types, all fields are required
+      if (!name.trim() || !trigger.trim() || !description.trim() || 
+          !auxiliarySignal.trim() || !auxiliaryCompletionTrigger.trim()) return;
+    }
 
     // 如果时长为0（空值状态），使用默认值
     const finalDuration = duration === 0 ? 45 : duration;
     const finalAuxiliaryDuration = auxiliaryDuration === 0 ? 15 : auxiliaryDuration;
 
-    onSave({
+    // CRITICAL: 防止循环引用 - 不能把自己设为自己的父节点
+    let finalParentId = parentId;
+    if (chain && finalParentId === chain.id) {
+      console.warn('检测到循环引用，将parentId重置为undefined');
+      finalParentId = undefined;
+    }
+    const chainData = {
       name: name.trim(),
-      trigger: trigger === '自定义触发器' ? customTrigger.trim() : trigger,
+      type,
+      parentId: finalParentId,
+      sortOrder,
+      trigger: type === 'group' && !trigger ? '任务群容器' : (trigger === '自定义触发器' ? customTrigger.trim() : trigger),
       duration: finalDuration,
       description: description.trim(),
-      auxiliarySignal: auxiliarySignal === '自定义信号' ? customAuxiliarySignal.trim() : auxiliarySignal,
+      auxiliarySignal: type === 'group' && !auxiliarySignal ? '打响指' : (auxiliarySignal === '自定义信号' ? customAuxiliarySignal.trim() : auxiliarySignal),
       auxiliaryDuration: finalAuxiliaryDuration,
-      auxiliaryCompletionTrigger: auxiliaryCompletionTrigger.trim(),
+      auxiliaryCompletionTrigger: type === 'group' && !auxiliaryCompletionTrigger ? '开始第一个子任务' : auxiliaryCompletionTrigger.trim(),
       exceptions: chain?.exceptions || [],
       auxiliaryExceptions: chain?.auxiliaryExceptions || [],
-    });
+    };
+    
+    console.log('ChainEditor - 即将保存的链条数据:', chainData);
+    console.log('ChainEditor - 是否为编辑模式:', !!chain);
+    if (chain) {
+      console.log('ChainEditor - 原始链条数据:', chain);
+    }
+    
+    onSave(chainData);
   };
 
   const handleTriggerSelect = (triggerText: string) => {
@@ -128,12 +171,44 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
             </div>
             <input
               type="text"
+              id="chain-name"
+              name="chainName"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="例如：学习Python、健身30分钟、无干扰写作"
               className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
               required
             />
+          </div>
+
+          {/* Chain Type */}
+          <div className="bento-card animate-scale-in">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                <i className="fas fa-layer-group text-green-500"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">任务类型</h3>
+                <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN TYPE</p>
+              </div>
+            </div>
+            <select
+              id="chain-type"
+              name="chainType"
+              value={type}
+              onChange={(e) => setType(e.target.value as ChainType)}
+              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
+              required
+            >
+              <option value="unit">基础单元</option>
+              <option value="group">任务群容器</option>
+              <option value="assault">突击单元（学习、实验、论文）</option>
+              <option value="recon">侦查单元（信息搜集）</option>
+              <option value="command">指挥单元（制定计划）</option>
+              <option value="special_ops">特勤单元（处理杂事）</option>
+              <option value="engineering">工程单元（运动锻炼）</option>
+              <option value="quartermaster">炊事单元（备餐做饭）</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -159,13 +234,15 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="sacred-seat-trigger"
+                  name="sacredSeatTrigger"
                   value={trigger}
                   onChange={(e) => handleTriggerSelect(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 mb-4 font-chinese"
-                  required
+                 required={type !== 'group'}
                 >
-                  <option value="" disabled className="text-gray-400">
-                    选择触发动作
+                 <option value="" disabled className="text-gray-400">
+                   {type === 'group' ? '选择触发动作（可选）' : '选择触发动作'}
                   </option>
                   {TRIGGER_TEMPLATES.map((template, index) => (
                     <option key={index} value={template.text} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
@@ -176,6 +253,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 {trigger === '自定义触发器' && (
                   <input
                     type="text"
+                    id="custom-trigger"
+                    name="customTrigger"
                     value={customTrigger}
                     onChange={(e) => setCustomTrigger(e.target.value)}
                     placeholder="输入你的自定义触发动作"
@@ -195,6 +274,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="task-duration"
+                  name="taskDuration"
                   value={isCustomDuration ? "custom" : duration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
@@ -221,6 +302,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
                       <input
                         type="range"
+                        id="duration-slider"
+                        name="durationSlider"
                         min="1"
                         max="300"
                         value={duration}
@@ -238,6 +321,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
                       <input
                         type="number"
+                        id="duration-input"
+                        name="durationInput"
                         min="1"
                         max="300"
                         value={duration === 0 ? '' : duration}
@@ -265,19 +350,49 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 )}
               </div>
+             
+             {type === 'group' && (
+               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-2xl">
+                 <div className="flex items-start space-x-3">
+                   <i className="fas fa-info-circle text-blue-500 mt-1"></i>
+                   <div>
+                     <h4 className="text-blue-700 dark:text-blue-300 font-semibold font-chinese mb-2">任务群创建提示</h4>
+                     <ul className="text-blue-600 dark:text-blue-400 text-sm space-y-1 font-chinese">
+                       <li>• 任务群用于将多个相关任务组织在一起</li>
+                       <li>• 创建后可以在任务群详情页添加子任务</li>
+                       <li>• 适用于大型项目的分解管理</li>
+                       <li>• 可以追踪整个项目群的总体进度</li>
+                     </ul>
+                   </div>
+                 </div>
+               </div>
+             )}
             </div>
 
             {/* 辅助链设置 */}
-            <div className="space-y-6">
+           <div className={`space-y-6 ${type === 'group' ? 'opacity-60' : ''}`}>
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
                   <i className="fas fa-calendar-alt text-blue-500"></i>
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100">辅助链设置</h3>
-                  <p className="text-sm font-mono text-gray-500 tracking-wide">AUXILIARY CHAIN</p>
+                 <p className="text-sm font-mono text-gray-500 tracking-wide">
+                   {type === 'group' ? 'AUXILIARY CHAIN (选填)' : 'AUXILIARY CHAIN'}
+                 </p>
                 </div>
               </div>
+               
+               {type === 'group' && (
+                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-2xl p-4 mb-6">
+                   <div className="flex items-center space-x-2 text-yellow-700 dark:text-yellow-300">
+                     <i className="fas fa-lightbulb"></i>
+                     <span className="text-sm font-chinese">
+                       任务群本身不执行具体任务，以下设置为可选项。你可以简化设置，重点关注任务群的整体描述。
+                     </span>
+                   </div>
+                 </div>
+               )}
               
               {/* 预约信号 */}
               <div className="bento-card border-l-4 border-l-blue-500 animate-scale-in">
@@ -289,13 +404,15 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="auxiliary-signal"
+                  name="auxiliarySignal"
                   value={auxiliarySignal}
                   onChange={(e) => handleAuxiliarySignalSelect(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 mb-4 font-chinese"
-                  required
+                  required={type !== 'group'}
                 >
                   <option value="" disabled className="text-gray-400">
-                    选择预约信号
+                    {type === 'group' ? '选择预约信号（可选）' : '选择预约信号'}
                   </option>
                   {AUXILIARY_SIGNAL_TEMPLATES.map((template, index) => (
                     <option key={index} value={template.text} className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">
@@ -306,6 +423,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 {auxiliarySignal === '自定义信号' && (
                   <input
                     type="text"
+                    id="custom-auxiliary-signal"
+                    name="customAuxiliarySignal"
                     value={customAuxiliarySignal}
                     onChange={(e) => setCustomAuxiliarySignal(e.target.value)}
                     placeholder="输入你的自定义预约信号"
@@ -325,6 +444,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </div>
                 <select
+                  id="auxiliary-duration"
+                  name="auxiliaryDuration"
                   value={isCustomAuxiliaryDuration ? "custom" : auxiliaryDuration}
                   onChange={(e) => {
                     if (e.target.value === "custom") {
@@ -351,6 +472,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
                       <input
                         type="range"
+                        id="auxiliary-duration-slider"
+                        name="auxiliaryDurationSlider"
                         min="1"
                         max="120"
                         value={auxiliaryDuration}
@@ -368,6 +491,8 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                       <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
                       <input
                         type="number"
+                        id="auxiliary-duration-input"
+                        name="auxiliaryDurationInput"
                         min="1"
                         max="120"
                         value={auxiliaryDuration === 0 ? '' : auxiliaryDuration}
@@ -407,14 +532,19 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 </div>
                 <input
                   type="text"
+                  id="auxiliary-completion-trigger"
+                  name="auxiliaryCompletionTrigger"
                   value={auxiliaryCompletionTrigger}
                   onChange={(e) => setAuxiliaryCompletionTrigger(e.target.value)}
-                  placeholder="例如：打开编程软件、坐到书房书桌前"
+                  placeholder={type === 'group' ? '任务群的预约完成条件（可选）' : '例如：打开编程软件、坐到书房书桌前'}
                   className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-chinese"
-                  required
+                  required={type !== 'group'}
                 />
                 <p className="text-gray-500 text-xs mt-3 leading-relaxed">
-                  这是你在预约时间内必须完成的动作，通常就是主链的"神圣座位"触发器
+                  {type === 'group' 
+                    ? '任务群的预约完成条件，通常是开始执行第一个子任务' 
+                    : '这是你在预约时间内必须完成的动作，通常就是主链的"神圣座位"触发器'
+                  }
                 </p>
               </div>
             </div>
@@ -432,13 +562,36 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
               </div>
             </div>
             <textarea
+              id="task-description"
+              name="taskDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="具体要做什么？例如：完成CS61A项目的第一部分"
+              placeholder={
+                type === 'group' 
+                  ? '描述这个任务群的目标和范围，例如：期末复习计划、网站开发项目、健身训练计划等'
+                  : '具体要做什么？例如：完成CS61A项目的第一部分'
+              }
               rows={4}
               className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 resize-none font-chinese leading-relaxed"
               required
             />
+            
+            {type === 'group' && (
+              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/50 rounded-2xl">
+                <div className="flex items-start space-x-3">
+                  <i className="fas fa-check-circle text-green-500 mt-1"></i>
+                  <div>
+                    <h4 className="text-green-700 dark:text-green-300 font-semibold font-chinese mb-2">任务群描述建议</h4>
+                    <ul className="text-green-600 dark:text-green-400 text-sm space-y-1 font-chinese">
+                      <li>• 明确这个任务群的总体目标</li>
+                      <li>• 说明预期包含哪些类型的子任务</li>
+                      <li>• 描述完成标准或里程碑</li>
+                      <li>• 可以提及时间安排或优先级</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

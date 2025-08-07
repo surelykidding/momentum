@@ -1,59 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { Chain, ScheduledSession, ChainTreeNode } from '../types';
-import { Play, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChainTreeNode, ScheduledSession } from '../types';
+import { Play, Clock, Users } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
-import { getChainTypeConfig } from '../utils/chainTree';
+import { getGroupProgress, getChainTypeConfig } from '../utils/chainTree';
 
-interface ChainCardProps {
-  chain: Chain | ChainTreeNode;
+interface GroupCardProps {
+  group: ChainTreeNode;
   scheduledSession?: ScheduledSession;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
   onViewDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDelete: (chainId: string) => void;
-  onExport: (chainId: string) => void;
 }
 
-export const ChainCard: React.FC<ChainCardProps> = ({
-  chain,
+export const GroupCard: React.FC<GroupCardProps> = ({
+  group,
   scheduledSession,
   onStartChain,
   onScheduleChain,
   onViewDetail,
   onCancelScheduledSession,
   onDelete,
-  onExport,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  
-  // 获取实际的链条数据，确保显示最新的时长信息
-  const actualChain = React.useMemo(() => {
-    // 如果传入的是 ChainTreeNode，需要确保数据是最新的
-    return chain;
-  }, [chain]);
 
-  const typeConfig = getChainTypeConfig(chain.type);
+  const progress = getGroupProgress(group);
+  const typeConfig = getChainTypeConfig(group.type);
+  const isScheduled = scheduledSession && timeRemaining > 0;
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!scheduledSession) return;
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
-      if (remaining <= 0) {
-        // Session expired - this would be handled by parent component
-      }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [scheduledSession]);
-
-  const isScheduled = scheduledSession && timeRemaining > 0;
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,7 +52,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
 
   const handleConfirmDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(chain.id);
+    onDelete(group.id);
     setShowDeleteConfirm(false);
   };
 
@@ -75,8 +64,8 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   return (
     <div className="relative">
       <div 
-        className="bento-card cursor-pointer group animate-scale-in"
-        onClick={() => onViewDetail(chain.id)}
+        className="bento-card cursor-pointer group animate-scale-in border-l-4 border-l-blue-500"
+        onClick={() => onViewDetail(group.id)}
       >
         {/* Menu button */}
         <div className="absolute top-6 right-6">
@@ -93,22 +82,11 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           {showMenu && (
             <div className="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-200 dark:border-slate-600 py-2 z-10 min-w-[140px]">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onExport(chain.id);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-3 text-left text-primary-500 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center space-x-3 transition-colors"
-              >
-                <i className="fas fa-download text-sm"></i>
-                <span className="font-chinese font-medium">导出链条</span>
-              </button>
-              <button
                 onClick={handleDeleteClick}
                 className="w-full px-4 py-3 text-left text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
               >
                 <i className="fas fa-trash text-sm"></i>
-                <span className="font-chinese font-medium">删除链条</span>
+                <span className="font-chinese font-medium">删除任务群</span>
               </button>
             </div>
           )}
@@ -118,55 +96,55 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 pr-4">
             <div className="flex items-center space-x-3 mb-3">
-              <div className={`w-8 h-8 rounded-xl ${typeConfig.bgColor} flex items-center justify-center`}>
-                <i className={`${typeConfig.icon} ${typeConfig.color} text-sm`}></i>
+              <div className={`w-10 h-10 rounded-2xl ${typeConfig.bgColor} flex items-center justify-center`}>
+                <i className={`${typeConfig.icon} ${typeConfig.color} text-lg`}></i>
               </div>
               <div>
                 <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100 group-hover:text-primary-500 transition-colors">
-                  {chain.name}
+                  {group.name}
                 </h3>
-                {chain.type !== 'unit' && (
-                  <p className="text-xs font-mono text-gray-500 tracking-wide">
-                    {typeConfig.name}
-                  </p>
-                )}
+                <p className="text-xs font-mono text-gray-500 tracking-wide uppercase">
+                  {typeConfig.name}
+                </p>
               </div>
             </div>
-            <p className="text-gray-600 dark:text-slate-400 text-sm mb-3 font-mono tracking-wide">
-              {chain.trigger}
-            </p>
             <p className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed">
-              {chain.description}
+              {group.description}
             </p>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-chinese text-gray-600 dark:text-slate-400">任务进度</span>
+            <span className="text-sm font-mono text-blue-500 font-semibold">
+              {progress.completed}/{progress.total}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
+            ></div>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 border border-blue-200/50 dark:border-blue-400/30">
+            <div className="flex items-center justify-center space-x-2 text-blue-500 mb-2">
+              <Users size={16} />
+              <span className="text-2xl font-bold font-mono">{group.children.length}</span>
+            </div>
+            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">子任务数</div>
+          </div>
           <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 dark:from-primary-500/20 dark:to-primary-600/10 border border-primary-200/50 dark:border-primary-400/30">
             <div className="flex items-center justify-center space-x-2 text-primary-500 mb-2">
               <i className="fas fa-fire text-lg"></i>
-              <span className="text-3xl font-bold font-mono">#{chain.currentStreak}</span>
+              <span className="text-2xl font-bold font-mono">#{group.currentStreak}</span>
             </div>
-            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">主链记录</div>
-          </div>
-          <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 border border-blue-200/50 dark:border-blue-400/30">
-            <div className="flex items-center justify-center space-x-2 text-blue-500 mb-2">
-              <i className="fas fa-calendar-alt text-lg"></i>
-              <span className="text-3xl font-bold font-mono">#{chain.auxiliaryStreak}</span>
-            </div>
-            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">预约链记录</div>
-          </div>
-        </div>
-
-        {/* Duration and completions */}
-        <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
-          <div className="flex items-center space-x-2 text-gray-700 dark:text-slate-300">
-            <Clock size={16} />
-            <span className="font-medium">{formatTime(actualChain.duration)}</span>
-          </div>
-          <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
-            {actualChain.totalCompletions} completion{(actualChain.totalCompletions === 0 || actualChain.totalCompletions === 1) ? '' : 's'}
+            <div className="text-xs font-chinese text-gray-600 dark:text-slate-400 font-medium">群组记录</div>
           </div>
         </div>
 
@@ -182,13 +160,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
                 {formatDuration(timeRemaining)}
               </div>
             </div>
-            <div className="text-blue-600 dark:text-blue-400 text-xs mb-3 font-chinese">
-              请在时间结束前完成: {chain.auxiliaryCompletionTrigger}
-            </div>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onCancelScheduledSession?.(chain.id);
+                onCancelScheduledSession?.(group.id);
               }}
               className="w-full bg-red-500/10 hover:bg-red-500/20 dark:bg-red-500/20 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 px-3 py-3 rounded-xl text-sm transition-colors duration-200 flex items-center justify-center space-x-2 border border-red-200/50 dark:border-red-400/30"
             >
@@ -201,16 +176,16 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         {/* Action buttons */}
         <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={() => onStartChain(chain.id)}
+            onClick={() => onStartChain(group.id)}
             className="flex-1 gradient-primary hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
           >
             <Play size={16} />
-            <span className="font-chinese font-semibold">开始任务</span>
+            <span className="font-chinese font-semibold">开始下一个</span>
           </button>
           
           {!isScheduled && (
             <button
-              onClick={() => onScheduleChain(chain.id)}
+              onClick={() => onScheduleChain(group.id)}
               className="flex-1 gradient-dark hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
             >
               <i className="fas fa-clock"></i>
@@ -226,67 +201,27 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-3xl p-8 max-w-lg w-full border border-gray-200/60 dark:border-slate-600/60 shadow-2xl animate-scale-in">
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-full bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mx-auto mb-6">
-                <i className="fas fa-trash text-red-500 text-2xl"></i>
+                <i className="fas fa-layer-group text-red-500 text-2xl"></i>
               </div>
-              <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-3">确认删除链条</h3>
+              <h3 className="text-2xl font-bold font-chinese text-[#161615] dark:text-slate-100 mb-3">确认删除任务群</h3>
               <p className="text-gray-600 dark:text-slate-300 mb-6">
-                你确定要删除链条 "<span className="text-primary-500 font-semibold">{chain.name}</span>" 吗？
+                你确定要删除任务群 "<span className="text-primary-500 font-semibold">{group.name}</span>" 吗？
               </p>
             </div>
             
             <div className="bg-red-50/80 dark:bg-red-900/20 rounded-2xl p-6 border border-red-200/60 dark:border-red-800/40 mb-8">
               <div className="text-center mb-6">
                 <p className="text-red-600 dark:text-red-400 text-sm font-medium font-chinese">
-                  ⚠️ 此操作将永久删除以下数据：
+                  ⚠️ 此操作将删除整个任务群及其所有子任务：
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm">
-                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
-                  <div className="font-semibold mb-3 flex items-center font-chinese">
-                    <i className="fas fa-fire mr-2"></i>
-                    主链数据
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {group.children.map((child, index) => (
+                  <div key={child.id} className="text-red-600 dark:text-red-400 text-sm flex items-center space-x-2">
+                    <i className="fas fa-minus text-xs"></i>
+                    <span className="font-chinese">{child.name}</span>
                   </div>
-                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
-                    <div>记录: #{chain.currentStreak}</div>
-                    <div>完成: {chain.totalCompletions}</div>
-                    <div>失败: {chain.totalFailures}</div>
-                  </div>
-                </div>
-                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
-                  <div className="font-semibold mb-3 flex items-center font-chinese">
-                    <i className="fas fa-calendar mr-2"></i>
-                    预约链数据
-                  </div>
-                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
-                    <div>记录: #{chain.auxiliaryStreak}</div>
-                    <div>失败: {chain.auxiliaryFailures}</div>
-                    <div>例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-red-600 dark:text-red-400 text-sm mt-4">
-                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
-                  <div className="font-semibold mb-3 flex items-center font-chinese">
-                    <i className="fas fa-chart-line mr-2"></i>
-                    历史记录
-                  </div>
-                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
-                    <div>完成记录: {chain.totalCompletions} 次</div>
-                    <div>失败记录: {chain.totalFailures} 次</div>
-                    <div>成功率: {chain.totalCompletions > 0 ? Math.round((chain.totalCompletions / (chain.totalCompletions + chain.totalFailures)) * 100) : 0}%</div>
-                  </div>
-                </div>
-                <div className="bg-white/80 dark:bg-slate-700/50 rounded-xl p-4 border border-red-200/60 dark:border-red-800/40">
-                  <div className="font-semibold mb-3 flex items-center font-chinese">
-                    <i className="fas fa-cog mr-2"></i>
-                    规则设置
-                  </div>
-                  <div className="space-y-1 text-xs text-gray-600 dark:text-slate-300">
-                    <div>例外: {chain.exceptions.length} 条</div>
-                    <div>预约例外: {chain.auxiliaryExceptions?.length || 0} 条</div>
-                    <div>所有配置</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
             
@@ -310,4 +245,4 @@ export const ChainCard: React.FC<ChainCardProps> = ({
       )}
     </div>
   );
-};```
+};

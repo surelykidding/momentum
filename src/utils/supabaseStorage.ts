@@ -21,6 +21,9 @@ export class SupabaseStorage {
     return data.map(chain => ({
       id: chain.id,
       name: chain.name,
+      parentId: chain.parent_id || undefined,
+      type: chain.type as Chain['type'],
+      sortOrder: chain.sort_order,
       trigger: chain.trigger,
       duration: chain.duration,
       description: chain.description,
@@ -41,92 +44,95 @@ export class SupabaseStorage {
 
   async saveChains(chains: Chain[]): Promise<void> {
     const user = await getCurrentUser();
-    if (!user) return;
+    if (!user) {
+      const error = new Error('用户未认证，无法保存数据');
+      console.error('No authenticated user found when trying to save chains');
+      throw error;
+    }
 
-    // First, get existing chains to determine which are new and which need updates
-    const { data: existingChains } = await supabase
+    console.log('正在为用户保存链数据:', user.id, '链数量:', chains.length);
+    console.log('要保存的链条详情:', chains.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      type: c.type,
+      parentId: c.parentId,
+      sortOrder: c.sortOrder 
+    })));
+
+    // 准备upsert数据
+    const upsertData = chains.map(chain => {
+      // CRITICAL: 防止循环引用
+      let parentId = chain.parentId || null;
+      if (parentId === chain.id) {
+        console.warn(`检测到循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为null`);
+        parentId = null;
+      }
+
+      const data = {
+        id: chain.id,
+        name: chain.name,
+        parent_id: parentId,
+        type: chain.type || 'unit',
+        sort_order: chain.sortOrder || Math.floor(Date.now() / 1000),
+        trigger: chain.trigger,
+        duration: chain.duration,
+        description: chain.description,
+        current_streak: chain.currentStreak,
+        auxiliary_streak: chain.auxiliaryStreak,
+        total_completions: chain.totalCompletions,
+        total_failures: chain.totalFailures,
+        auxiliary_failures: chain.auxiliaryFailures,
+        exceptions: chain.exceptions,
+        auxiliary_exceptions: chain.auxiliaryExceptions,
+        auxiliary_signal: chain.auxiliarySignal,
+        auxiliary_duration: chain.auxiliaryDuration,
+        auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
+        created_at: chain.createdAt.toISOString(),
+        last_completed_at: chain.lastCompletedAt?.toISOString(),
+        user_id: user.id,
+      };
+      console.log(`准备保存链条 ${chain.id} (${chain.name}):`, data);
+      return data;
+    });
+
+    // 先删除当前用户的所有链条，然后重新插入
+    console.log('删除用户现有的所有链条...');
+    const { error: deleteError } = await supabase
       .from('chains')
-      .select('id')
+      .delete()
       .eq('user_id', user.id);
 
-    const existingIds = new Set(existingChains?.map(c => c.id) || []);
-    const newChains = chains.filter(chain => !existingIds.has(chain.id));
-    const updatedChains = chains.filter(chain => existingIds.has(chain.id));
-
-    // Insert new chains
-    if (newChains.length > 0) {
-      const { error: insertError } = await supabase
-        .from('chains')
-        .insert(newChains.map(chain => ({
-          id: chain.id,
-          name: chain.name,
-          trigger: chain.trigger,
-          duration: chain.duration,
-          description: chain.description,
-          current_streak: chain.currentStreak,
-          auxiliary_streak: chain.auxiliaryStreak,
-          total_completions: chain.totalCompletions,
-          total_failures: chain.totalFailures,
-          auxiliary_failures: chain.auxiliaryFailures,
-          exceptions: chain.exceptions,
-          auxiliary_exceptions: chain.auxiliaryExceptions,
-          auxiliary_signal: chain.auxiliarySignal,
-          auxiliary_duration: chain.auxiliaryDuration,
-          auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-          created_at: chain.createdAt.toISOString(),
-          last_completed_at: chain.lastCompletedAt?.toISOString(),
-          user_id: user.id,
-        })));
-
-      if (insertError) {
-        console.error('Error inserting chains:', insertError);
-      }
+    if (deleteError) {
+      console.error('删除现有链数据失败:', deleteError);
+      throw new Error(`删除现有数据失败: ${deleteError.message}`);
     }
-
-    // Update existing chains
-    for (const chain of updatedChains) {
-      const { error: updateError } = await supabase
-        .from('chains')
-        .update({
-          name: chain.name,
-          trigger: chain.trigger,
-          duration: chain.duration,
-          description: chain.description,
-          current_streak: chain.currentStreak,
-          auxiliary_streak: chain.auxiliaryStreak,
-          total_completions: chain.totalCompletions,
-          total_failures: chain.totalFailures,
-          auxiliary_failures: chain.auxiliaryFailures,
-          exceptions: chain.exceptions,
-          auxiliary_exceptions: chain.auxiliaryExceptions,
-          auxiliary_signal: chain.auxiliarySignal,
-          auxiliary_duration: chain.auxiliaryDuration,
-          auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-          last_completed_at: chain.lastCompletedAt?.toISOString(),
-        })
-        .eq('id', chain.id)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Error updating chain:', updateError);
-      }
-    }
-
-    // Delete chains that are no longer in the array
-    const currentIds = new Set(chains.map(c => c.id));
-    const toDelete = existingChains?.filter(c => !currentIds.has(c.id)) || [];
     
-    if (toDelete.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('chains')
-        .delete()
-        .in('id', toDelete.map(c => c.id))
-        .eq('user_id', user.id);
+    console.log('删除成功，开始插入新数据...');
+    
+    // 插入新数据
+    const { data: insertResult, error: insertError } = await supabase
+      .from('chains')
+      .insert(upsertData)
+      .select('id, name');
 
-      if (deleteError) {
-        console.error('Error deleting chains:', deleteError);
-      }
+    if (insertError) {
+      console.error('插入链数据失败:', insertError);
+      throw new Error(`插入数据失败: ${insertError.message}`);
     }
+    
+    console.log('插入操作成功，返回数据:', insertResult);
+    
+    // 验证所有链条都已保存
+    const savedIds = new Set((insertResult || []).map(r => r.id));  
+    const expectedIds = new Set(chains.map(c => c.id));
+    const missingSavedIds = [...expectedIds].filter(id => !savedIds.has(id));
+    
+    if (missingSavedIds.length > 0) {
+      console.error('部分链条保存失败，缺失的IDs:', missingSavedIds);
+      throw new Error(`部分链条保存失败: ${missingSavedIds.join(', ')}`);
+    }
+
+    console.log('所有链数据保存成功');
   }
 
   // Scheduled Sessions
