@@ -167,12 +167,14 @@ function App() {
             <GroupView
               group={groupNode}
               scheduledSessions={state.scheduledSessions}
+             availableUnits={state.chains}
               onBack={handleBackToDashboard}
               onStartChain={handleStartChain}
               onScheduleChain={handleScheduleChain}
               onEditChain={(chainId) => handleEditChain(chainId)}
               onDeleteChain={handleDeleteChain}
               onAddUnit={() => handleCreateChain(state.viewingChainId!)}
+             onImportUnits={handleImportUnits}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
