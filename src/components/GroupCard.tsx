@@ -33,15 +33,23 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const typeConfig = getChainTypeConfig(group.type);
   const isScheduled = scheduledSession && timeRemaining > 0;
 
+  // 计算通知时机
+  const getNotificationThreshold = (durationMinutes: number) => {
+    if (durationMinutes <= 3) return null; // 小于等于3分钟不通知
+    const thresholdMinutes = Math.floor(durationMinutes / 3);
+    return Math.min(thresholdMinutes, 1) * 60; // 转换为秒，最多1分钟
+  };
   React.useEffect(() => {
     if (!scheduledSession) return;
+
+    const notificationThreshold = getNotificationThreshold(group.auxiliaryDuration);
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
       
-      // 剩余5分钟时显示警告通知
-      if (remaining <= 120 && remaining > 0 && !hasShownWarning) {
+      // 根据新逻辑显示警告通知
+      if (notificationThreshold && remaining <= notificationThreshold && remaining > 0 && !hasShownWarning) {
         setHasShownWarning(true);
         const minutes = Math.max(1, Math.ceil(remaining / 60));
         notificationManager.notifyScheduleWarning(
@@ -59,7 +67,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession, hasShownWarning, group.name]);
+  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration]);
 
   // 重置警告状态当预约会话改变时
   React.useEffect(() => {
