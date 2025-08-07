@@ -104,6 +104,45 @@ export const getNextUnitInGroup = (group: ChainTreeNode): ChainTreeNode | null =
 };
 
 /**
+ * 完成任务群时更新所有子单元的完成次数
+ */
+export const updateGroupCompletions = (chains: Chain[], groupId: string): Chain[] => {
+  const chainTree = buildChainTree(chains);
+  const groupNode = chainTree.find(node => node.id === groupId);
+  
+  if (!groupNode || groupNode.type !== 'group') {
+    return chains;
+  }
+  
+  // 获取所有子单元的ID
+  const getAllChildIds = (node: ChainTreeNode): string[] => {
+    let ids: string[] = [];
+    if (node.type === 'unit') {
+      ids.push(node.id);
+    }
+    node.children.forEach(child => {
+      ids = ids.concat(getAllChildIds(child));
+    });
+    return ids;
+  };
+  
+  const childIds = getAllChildIds(groupNode);
+  
+  // 更新任务群和所有子单元的完成次数
+  return chains.map(chain => {
+    if (chain.id === groupId || childIds.includes(chain.id)) {
+      return {
+        ...chain,
+        currentStreak: chain.currentStreak + 1,
+        totalCompletions: chain.totalCompletions + 1,
+        lastCompletedAt: new Date(),
+      };
+    }
+    return chain;
+  });
+};
+
+/**
  * 获取所有顶层任务（用于仪表盘显示）
  */
 export const getTopLevelChains = (chainTree: ChainTreeNode[]): ChainTreeNode[] => {

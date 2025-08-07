@@ -5,6 +5,7 @@ import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
 import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
+import { getChainTypeConfig } from '../utils/chainTree';
 import { Plus, Download } from 'lucide-react';
 import { notificationManager } from '../utils/notifications';
 import { NotificationToggle } from './NotificationToggle';

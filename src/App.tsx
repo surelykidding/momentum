@@ -11,7 +11,7 @@ import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
 import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
-import { buildChainTree, getNextUnitInGroup } from './utils/chainTree';
+import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './utils/chainTree';
 import { notificationManager } from './utils/notifications';
 
 function App() {
@@ -167,12 +167,14 @@ function App() {
             <GroupView
               group={groupNode}
               scheduledSessions={state.scheduledSessions}
+             availableUnits={state.chains}
               onBack={handleBackToDashboard}
               onStartChain={handleStartChain}
               onScheduleChain={handleScheduleChain}
               onEditChain={(chainId) => handleEditChain(chainId)}
               onDeleteChain={handleDeleteChain}
               onAddUnit={() => handleCreateChain(state.viewingChainId!)}
+             onImportUnits={handleImportUnits}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
@@ -531,7 +533,7 @@ function App() {
     };
 
     setState(prev => {
-      const updatedChains = prev.chains.map(c =>
+      let updatedChains = prev.chains.map(c =>
         c.id === chain.id
           ? {
               ...c,
@@ -541,6 +543,11 @@ function App() {
             }
           : c
       );
+      
+      // 如果完成的是单元任务，且该单元属于某个任务群，也要更新任务群的完成次数
+      if (chain.parentId && chain.type !== 'group') {
+        updatedChains = updateGroupCompletions(updatedChains, chain.parentId);
+      }
 
       const updatedHistory = [...prev.completionHistory, completionRecord];
       
@@ -822,6 +829,77 @@ function App() {
       }
     }
   };
+
+  const handleImportUnits = async (unitIds: string[], groupId: string, mode: 'move' | 'copy' = 'copy') => {
+    console.log('开始导入单元到任务群...', { unitIds, groupId, mode });
+    
+    try {
+      let updatedChains: Chain[];
+      
+      if (mode === 'copy') {
+        // 复制模式：创建副本并加入任务群，原单元保持独立
+        const copiesToAdd: Chain[] = [];
+        
+        state.chains.forEach(chain => {
+          if (unitIds.includes(chain.id)) {
+            const copy: Chain = {
+              ...chain,
+              id: crypto.randomUUID(), // 生成新的ID
+              name: `${chain.name} (副本)`, // 添加副本标识
+              parentId: groupId,
+              currentStreak: 0, // 重置记录
+              auxiliaryStreak: 0,
+              totalCompletions: 0,
+              totalFailures: 0,
+              auxiliaryFailures: 0,
+              createdAt: new Date(),
+              lastCompletedAt: undefined,
+            };
+            copiesToAdd.push(copy);
+          }
+        });
+        
+        updatedChains = [...state.chains, ...copiesToAdd];
+      } else {
+        // 移动模式：更新选中单元的 parentId 为目标任务群的 ID
+        updatedChains = state.chains.map(chain => {
+          if (unitIds.includes(chain.id)) {
+            return { ...chain, parentId: groupId };
+          }
+          return chain;
+        });
+      }
+      
+      console.log('准备保存导入后的数据到存储...');
+      // Wait for data to be saved before updating UI
+      await storage.saveChains(updatedChains);
+      console.log('导入数据保存成功，更新UI状态');
+      
+      // Only update state after successful save
+      setState(prev => ({
+        ...prev,
+        chains: updatedChains,
+      }));
+      console.log('导入完成，UI状态更新完成');
+    } catch (error) {
+      console.error('Failed to import units:', error);
+      // 提供更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`导入失败: ${errorMessage}\n\n请查看控制台了解详细信息，然后重试`);
+      
+      // 如果导入失败，重新加载数据以确保状态一致性
+      try {
+        const currentChains = await storage.getChains();
+        setState(prev => ({
+          ...prev,
+          chains: currentChains,
+        }));
+      } catch (reloadError) {
+        console.error('重新加载数据也失败了:', reloadError);
+      }
+    }
+  };
+
   return renderContent();
 }
 
