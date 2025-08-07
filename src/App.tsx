@@ -12,7 +12,7 @@ import { supabaseStorage } from './utils/supabaseStorage';
 import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
 import { buildChainTree, getNextUnitInGroup } from './utils/chainTree';
-import { notificationManager } from '../utils/notifications';
+import { notificationManager } from './utils/notifications';
 
 function App() {
   const [state, setState] = useState<AppState>({
