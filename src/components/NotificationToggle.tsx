@@ -11,8 +11,7 @@ export const NotificationToggle: React.FC = () => {
     setIsSupported(supported);
     
     if (supported) {
-      const permission = notificationManager.getPermission();
-      setIsEnabled(permission === 'granted');
+      setIsEnabled(notificationManager.isNotificationsEnabled());
     }
   }, []);
 
@@ -20,13 +19,14 @@ export const NotificationToggle: React.FC = () => {
     if (!isSupported) return;
 
     if (isEnabled) {
-      // 无法直接撤销通知权限，只能提示用户手动在浏览器设置中关闭
-      alert('请在浏览器设置中手动关闭通知权限');
-      return;
+      // 禁用通知
+      notificationManager.disableNotifications();
+      setIsEnabled(false);
+    } else {
+      // 启用通知
+      const granted = await notificationManager.enableNotifications();
+      setIsEnabled(granted);
     }
-
-    const granted = await notificationManager.requestPermission();
-    setIsEnabled(granted);
   };
 
   if (!isSupported) {
