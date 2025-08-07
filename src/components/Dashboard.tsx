@@ -3,8 +3,9 @@ import { Chain, ScheduledSession } from '../types';
 import { ChainCard } from './ChainCard';
 import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
+import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 
 interface DashboardProps {
   chains: Chain[];
@@ -16,6 +17,7 @@ interface DashboardProps {
   onViewChainDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
+  onImportChains: (chains: Chain[]) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -28,7 +30,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onViewChainDetail,
   onCancelScheduledSession,
   onDeleteChain,
+  onImportChains,
 }) => {
+  const [showImportExport, setShowImportExport] = React.useState(false);
+  
   console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
   
   // 构建任务树并获取顶层任务
@@ -119,13 +124,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   YOUR TASK CHAINS
                 </p>
               </div>
-              <button
-                onClick={onCreateChain}
-                className="gradient-dark hover:shadow-xl text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
-              >
-                <i className="fas fa-plus"></i>
-                <span className="font-chinese font-medium">新建链</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowImportExport(true)}
+                  className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+                >
+                  <Download size={16} />
+                  <span className="font-chinese font-medium">数据管理</span>
+                </button>
+                <button
+                  onClick={onCreateChain}
+                  className="gradient-dark hover:shadow-xl text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+                >
+                  <i className="fas fa-plus"></i>
+                  <span className="font-chinese font-medium">新建链</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -158,6 +172,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Import/Export Modal */}
+      {showImportExport && (
+        <ImportExportModal
+          chains={chains}
+          onImport={onImportChains}
+          onClose={() => setShowImportExport(false)}
+        />
+      )}
     </div>
   );
 };
