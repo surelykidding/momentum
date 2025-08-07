@@ -11,7 +11,7 @@ import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
 import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
-import { buildChainTree, getNextUnitInGroup } from './utils/chainTree';
+import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './utils/chainTree';
 import { notificationManager } from './utils/notifications';
 
 function App() {
@@ -531,7 +531,7 @@ function App() {
     };
 
     setState(prev => {
-      const updatedChains = prev.chains.map(c =>
+      let updatedChains = prev.chains.map(c =>
         c.id === chain.id
           ? {
               ...c,
@@ -541,6 +541,11 @@ function App() {
             }
           : c
       );
+      
+      // 如果完成的是单元任务，且该单元属于某个任务群，也要更新任务群的完成次数
+      if (chain.parentId && chain.type !== 'group') {
+        updatedChains = updateGroupCompletions(updatedChains, chain.parentId);
+      }
 
       const updatedHistory = [...prev.completionHistory, completionRecord];
       
