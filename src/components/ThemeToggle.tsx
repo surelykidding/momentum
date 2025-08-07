@@ -46,7 +46,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         <div className={`relative ${className}`}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center space-x-2 px-4 py-2 rounded-2xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200/60 dark:border-slate-600/60 hover:bg-white dark:hover:bg-slate-700/90 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl dark:shadow-slate-900/50 focus-ring"
+          className="flex items-center space-x-2 px-4 py-2 rounded-2xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200/60 dark:border-slate-600/60 hover:bg-white dark:hover:bg-slate-700/90 transition-all duration-300 shadow-lg hover:shadow-xl dark:shadow-slate-900/50 focus-ring"
           aria-label="选择主题"
           aria-expanded={isDropdownOpen}
           aria-haspopup="true"
