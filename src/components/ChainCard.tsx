@@ -12,7 +12,6 @@ interface ChainCardProps {
   onViewDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDelete: (chainId: string) => void;
-  onExport?: (chainId: string) => void;
 }
 
 export const ChainCard: React.FC<ChainCardProps> = ({
@@ -23,7 +22,6 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   onViewDetail,
   onCancelScheduledSession,
   onDelete,
-  onExport,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -92,19 +90,6 @@ export const ChainCard: React.FC<ChainCardProps> = ({
           
           {showMenu && (
             <div className="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-200 dark:border-slate-600 py-2 z-10 min-w-[140px]">
-              {onExport && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onExport(chain.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-4 py-3 text-left text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 transition-colors"
-                >
-                  <i className="fas fa-download text-sm"></i>
-                  <span className="font-chinese font-medium">导出链条</span>
-                </button>
-              )}
               <button
                 onClick={handleDeleteClick}
                 className="w-full px-4 py-3 text-left text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
