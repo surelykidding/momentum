@@ -105,8 +105,8 @@ class NotificationManager {
    * 显示通知
    */
   async showNotification(options: NotificationOptions): Promise<Notification | null> {
+    // 如果用户主动关闭了通知，直接返回null，不显示任何提示
     if (!this.isNotificationsEnabled()) {
-      console.warn('通知未启用或没有权限，无法显示通知');
       return null;
     }
 
@@ -117,7 +117,7 @@ class NotificationManager {
         tag: options.tag,
         requireInteraction: options.requireInteraction || false,
         silent: options.silent || false,
-        timestamp: Date.now(), // 添加时间戳确保通知唯一性
+        timestamp: Date.now(),
       });
 
       // 添加点击事件处理
@@ -137,12 +137,7 @@ class NotificationManager {
 
       return notification;
     } catch (error) {
-      console.error('显示通知失败:', error);
-      // 尝试重新请求权限
-      if (error.name === 'NotAllowedError') {
-        console.log('通知权限被拒绝，尝试重新请求权限');
-        await this.requestPermission();
-      }
+      // 静默处理错误，不显示任何提示
       return null;
     }
   }
@@ -157,13 +152,13 @@ class NotificationManager {
       title: '任务完成',
       body: `"${chainName}"已完成！当前记录: #${streak}`,
       icon: '/vite.svg',
-      tag: 'task-completed',
+      tag: `task-completed-${Date.now()}`, // 确保每次通知都是唯一的
       requireInteraction: false,
     });
   }
 
   /**
-   * 任务即将结束通知（剩余2分钟）
+   * 任务即将结束通知
    */
   async notifyTaskWarning(chainName: string, timeRemaining: string) {
     if (!this.isNotificationsEnabled()) return null;
@@ -172,13 +167,13 @@ class NotificationManager {
       title: '任务即将结束',
       body: `"${chainName}"还剩${timeRemaining}，请继续保持专注！`,
       icon: '/vite.svg',
-      tag: 'task-warning',
+      tag: `task-warning-${Date.now()}`, // 确保每次通知都是唯一的
       requireInteraction: false,
     });
   }
 
   /**
-   * 预约即将到期通知（剩余5分钟）
+   * 预约即将到期通知
    */
   async notifyScheduleWarning(chainName: string, timeRemaining: string) {
     if (!this.isNotificationsEnabled()) return null;
@@ -187,7 +182,7 @@ class NotificationManager {
       title: '预约即将到期', 
       body: `"${chainName}"预约还剩${timeRemaining}，请准备开始任务！`,
       icon: '/vite.svg',
-      tag: 'schedule-warning',
+      tag: `schedule-warning-${Date.now()}`, // 确保每次通知都是唯一的
       requireInteraction: true,
     });
   }
@@ -202,7 +197,7 @@ class NotificationManager {
       title: '预约失败',
       body: `"${chainName}"预约时间已到期，需要进行规则判定`,
       icon: '/vite.svg',
-      tag: 'schedule-failed',
+      tag: `schedule-failed-${Date.now()}`, // 确保每次通知都是唯一的
       requireInteraction: true,
     });
   }

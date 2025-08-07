@@ -25,7 +25,15 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const [selectedExistingRule, setSelectedExistingRule] = useState('');
   const [useExistingRule, setUseExistingRule] = useState(false);
 
+  // 计算通知时机
+  const getNotificationThreshold = (durationMinutes: number) => {
+    if (durationMinutes <= 3) return null; // 小于等于3分钟不通知
+    const thresholdMinutes = Math.floor(durationMinutes / 3);
+    return Math.min(thresholdMinutes, 1) * 60; // 转换为秒，最多1分钟
+  };
   useEffect(() => {
+    const notificationThreshold = getNotificationThreshold(session.duration);
+
     const calculateTimeRemaining = () => {
       const now = Date.now();
       const sessionDurationMs = session.duration * 60 * 1000;
@@ -45,8 +53,8 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       const remaining = calculateTimeRemaining();
       setTimeRemaining(remaining);
       
-      // 剩余2分钟时显示警告通知
-      if (remaining <= 120 && remaining > 0 && !hasShownWarning) {
+      // 根据新逻辑显示警告通知
+      if (notificationThreshold && remaining <= notificationThreshold && remaining > 0 && !hasShownWarning) {
         setHasShownWarning(true);
         const minutes = Math.max(1, Math.ceil(remaining / 60));
         notificationManager.notifyTaskWarning(chain.name, `${minutes}分钟`);
@@ -60,7 +68,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [session, onComplete]);
+  }, [session, onComplete, hasShownWarning, chain.name]);
 
   // 重置警告状态当会话改变时
   React.useEffect(() => {
