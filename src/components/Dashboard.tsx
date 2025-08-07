@@ -11,13 +11,11 @@ interface DashboardProps {
   scheduledSessions: ScheduledSession[];
   isLoading?: boolean;
   onCreateChain: () => void;
-  onImportChain: (file: File) => void;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
   onViewChainDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
-  onExportChain: (chainId: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -25,13 +23,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   scheduledSessions,
   isLoading = false,
   onCreateChain,
-  onImportChain,
   onStartChain,
   onScheduleChain,
   onViewChainDetail,
   onCancelScheduledSession,
   onDeleteChain,
-  onExportChain,
 }) => {
   console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
   
@@ -46,28 +42,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return scheduledSessions.find(session => session.chainId === chainId);
   };
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      onImportChain(file);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 md:p-6">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept=".json"
-      />
       <div className="max-w-7xl mx-auto">
         {/* Theme toggle in header */}
         <div className="flex justify-end mb-6">
@@ -123,22 +99,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p className="text-gray-700 dark:text-slate-300 mb-8 leading-relaxed">
                 链代表你想要持续做的任务。每次成功完成，你的记录就会增长一点。
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <button
-                  onClick={handleImportClick}
-                  className="w-full sm:w-auto bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 hover:scale-105"
-                >
-                  <i className="fas fa-upload text-lg"></i>
-                  <span className="font-chinese font-semibold">导入链条</span>
-                </button>
-                <button
-                  onClick={onCreateChain}
-                  className="w-full sm:w-auto gradient-primary hover:shadow-2xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 mx-auto hover:scale-105 shadow-xl"
-                >
-                  <i className="fas fa-plus text-lg"></i>
-                  <span className="font-chinese font-semibold">创建第一条链</span>
-                </button>
-              </div>
+              <button
+                onClick={onCreateChain}
+                className="gradient-primary hover:shadow-2xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-3 mx-auto hover:scale-105 shadow-xl"
+              >
+                <i className="fas fa-plus text-lg"></i>
+                <span className="font-chinese font-semibold">创建第一条链</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -152,22 +119,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   YOUR TASK CHAINS
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleImportClick}
-                  className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
-                >
-                  <i className="fas fa-upload"></i>
-                  <span className="font-chinese font-medium">导入链</span>
-                </button>
-                <button
-                  onClick={onCreateChain}
-                  className="gradient-dark hover:shadow-xl text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
-                >
-                  <i className="fas fa-plus"></i>
-                  <span className="font-chinese font-medium">新建链</span>
-                </button>
-              </div>
+              <button
+                onClick={onCreateChain}
+                className="gradient-dark hover:shadow-xl text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+              >
+                <i className="fas fa-plus"></i>
+                <span className="font-chinese font-medium">新建链</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -193,7 +151,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onViewDetail={onViewChainDetail}
                     onCancelScheduledSession={onCancelScheduledSession}
                     onDelete={onDeleteChain}
-                    onExport={onExportChain}
                   />
                 )
               ))}

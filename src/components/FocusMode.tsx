@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ActiveSession, Chain } from '../types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatDuration } from '../utils/time';
-import { showNotification } from '../utils/notifications';
 
 interface FocusModeProps {
   session: ActiveSession;
@@ -46,7 +45,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       setTimeRemaining(remaining);
       
       if (remaining <= 0) {
-        showNotification('任务完成', `“${chain.name}”已完成！`);
         onComplete();
       }
     };
