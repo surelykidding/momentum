@@ -3,6 +3,7 @@ import { Chain, ScheduledSession, ChainTreeNode } from '../types';
 import { Play, Clock } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 import { getChainTypeConfig } from '../utils/chainTree';
+import { notificationManager } from '../utils/notifications';
 
 interface ChainCardProps {
   chain: Chain | ChainTreeNode;
@@ -26,6 +27,7 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
   
   // 获取实际的链条数据，确保显示最新的时长信息
   const actualChain = React.useMemo(() => {
@@ -41,15 +43,32 @@ export const ChainCard: React.FC<ChainCardProps> = ({
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
+      
+      // 剩余5分钟时显示警告通知
+      if (remaining <= 300 && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.ceil(remaining / 60);
+        notificationManager.notifyScheduleWarning(
+          chain.name, 
+          `${minutes}分钟`
+        );
+      }
+      
       if (remaining <= 0) {
-        // Session expired - this would be handled by parent component
+        // 预约失败通知
+        notificationManager.notifyScheduleFailed(chain.name);
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession]);
+  }, [scheduledSession, hasShownWarning, chain.name]);
+
+  // 重置警告状态当预约会话改变时
+  React.useEffect(() => {
+    setHasShownWarning(false);
+  }, [scheduledSession?.scheduledAt]);
 
   const isScheduled = scheduledSession && timeRemaining > 0;
 

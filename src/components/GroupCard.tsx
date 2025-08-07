@@ -3,6 +3,7 @@ import { ChainTreeNode, ScheduledSession } from '../types';
 import { Play, Clock, Users } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 import { getGroupProgress, getChainTypeConfig } from '../utils/chainTree';
+import { notificationManager } from '../utils/notifications';
 
 interface GroupCardProps {
   group: ChainTreeNode;
@@ -26,6 +27,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
 
   const progress = getGroupProgress(group);
   const typeConfig = getChainTypeConfig(group.type);
@@ -37,12 +39,32 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
+      
+      // 剩余5分钟时显示警告通知
+      if (remaining <= 300 && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.ceil(remaining / 60);
+        notificationManager.notifyScheduleWarning(
+          group.name, 
+          `${minutes}分钟`
+        );
+      }
+      
+      if (remaining <= 0) {
+        // 预约失败通知
+        notificationManager.notifyScheduleFailed(group.name);
+      }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession]);
+  }, [scheduledSession, hasShownWarning, group.name]);
+
+  // 重置警告状态当预约会话改变时
+  React.useEffect(() => {
+    setHasShownWarning(false);
+  }, [scheduledSession?.scheduledAt]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();

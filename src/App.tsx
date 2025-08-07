@@ -12,6 +12,7 @@ import { supabaseStorage } from './utils/supabaseStorage';
 import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
 import { buildChainTree, getNextUnitInGroup } from './utils/chainTree';
+import { notificationManager } from '../utils/notifications';
 
 function App() {
   const [state, setState] = useState<AppState>({
@@ -300,6 +301,14 @@ function App() {
         );
         
         if (expiredSessions.length > 0) {
+          // 为每个过期的会话显示失败通知
+          expiredSessions.forEach(session => {
+            const chain = prev.chains.find(c => c.id === session.chainId);
+            if (chain) {
+              notificationManager.notifyScheduleFailed(chain.name);
+            }
+          });
+          
           // Show auxiliary judgment for the first expired session
           setShowAuxiliaryJudgment(expiredSessions[0].chainId);
           storage.saveScheduledSessions(activeScheduledSessions);
@@ -507,6 +516,10 @@ function App() {
 
     const chain = state.chains.find(c => c.id === state.activeSession!.chainId);
     if (!chain) return;
+
+    // 显示任务完成通知
+    const newStreak = chain.currentStreak + 1;
+    notificationManager.notifyTaskCompleted(chain.name, newStreak);
 
     const completionRecord: CompletionHistory = {
       chainId: chain.id,
