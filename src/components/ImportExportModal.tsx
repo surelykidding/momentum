@@ -13,7 +13,7 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
   onImport,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(chains.length === 0 ? 'import' : 'export');
   const [importData, setImportData] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importError, setImportError] = useState('');
@@ -148,7 +148,42 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 mb-8 bg-gray-100 dark:bg-slate-700 rounded-2xl p-1">
+        {chains.length > 0 ? (
+          <div className="flex space-x-1 mb-8 bg-gray-100 dark:bg-slate-700 rounded-2xl p-1">
+            <button
+              onClick={() => setActiveTab('export')}
+              className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 font-chinese ${
+                activeTab === 'export'
+                  ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Download size={16} />
+              <span>导出数据</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('import')}
+              className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 font-chinese ${
+                activeTab === 'import'
+                  ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Upload size={16} />
+              <span>导入数据</span>
+            </button>
+          </div>
+        ) : (
+          <div className="mb-8 text-center">
+            <div className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-200/50 dark:border-blue-400/30">
+              <Upload size={16} />
+              <span className="font-chinese font-medium">导入任务链数据</span>
+            </div>
+          </div>
+        )}
+
+        {chains.length > 0 && (
+          <div className="flex space-x-1 mb-8 bg-gray-100 dark:bg-slate-700 rounded-2xl p-1" style={{ display: 'none' }}>
           <button
             onClick={() => setActiveTab('export')}
             className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 font-chinese ${
@@ -171,10 +206,11 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
             <Upload size={16} />
             <span>导入数据</span>
           </button>
-        </div>
+          </div>
+        )}
 
         {/* Export Tab */}
-        {activeTab === 'export' && (
+        {activeTab === 'export' && chains.length > 0 && (
           <div className="space-y-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-2xl p-6">
               <h3 className="text-lg font-bold font-chinese text-blue-900 dark:text-blue-100 mb-3">
@@ -221,7 +257,7 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
         )}
 
         {/* Import Tab */}
-        {activeTab === 'import' && (
+        {(activeTab === 'import' || chains.length === 0) && (
           <div className="space-y-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-2xl p-6">
               <h3 className="text-lg font-bold font-chinese text-yellow-900 dark:text-yellow-100 mb-3">

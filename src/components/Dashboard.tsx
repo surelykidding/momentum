@@ -121,7 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
                 >
                   <Download size={16} />
-                  <span className="font-chinese font-medium">数据管理</span>
+                  <span className="font-chinese font-medium">导入数据</span>
                 </button>
               </div>
             </div>
@@ -143,7 +143,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
                 >
                   <Download size={16} />
-                  <span className="font-chinese font-medium">数据管理</span>
+                  <span className="font-chinese font-medium">导入数据</span>
                 </button>
                 <button
                   onClick={onCreateChain}
