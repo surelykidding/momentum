@@ -13,9 +13,11 @@ export interface NotificationOptions {
 
 class NotificationManager {
   private permission: NotificationPermission = 'default';
+  private isEnabled: boolean = false;
 
   constructor() {
     this.checkPermission();
+    this.loadEnabledState();
   }
 
   /**
@@ -28,6 +30,21 @@ class NotificationManager {
   }
 
   /**
+   * 从本地存储加载启用状态
+   */
+  private loadEnabledState() {
+    const stored = localStorage.getItem('notifications_enabled');
+    this.isEnabled = stored === 'true' && this.permission === 'granted';
+  }
+
+  /**
+   * 保存启用状态到本地存储
+   */
+  private saveEnabledState() {
+    localStorage.setItem('notifications_enabled', this.isEnabled.toString());
+  }
+
+  /**
    * 请求通知权限
    */
   async requestPermission(): Promise<boolean> {
@@ -37,6 +54,8 @@ class NotificationManager {
     }
 
     if (this.permission === 'granted') {
+      this.isEnabled = true;
+      this.saveEnabledState();
       return true;
     }
 
@@ -47,6 +66,8 @@ class NotificationManager {
     try {
       const permission = await Notification.requestPermission();
       this.permission = permission;
+      this.isEnabled = permission === 'granted';
+      this.saveEnabledState();
       return permission === 'granted';
     } catch (error) {
       console.error('请求通知权限失败:', error);
@@ -55,12 +76,36 @@ class NotificationManager {
   }
 
   /**
+   * 启用通知
+   */
+  async enableNotifications(): Promise<boolean> {
+    const hasPermission = await this.requestPermission();
+    if (hasPermission) {
+      this.isEnabled = true;
+      this.saveEnabledState();
+    }
+    return hasPermission;
+  }
+
+  /**
+   * 禁用通知
+   */
+  disableNotifications(): void {
+    this.isEnabled = false;
+    this.saveEnabledState();
+  }
+
+  /**
+   * 检查通知是否启用
+   */
+  isNotificationsEnabled(): boolean {
+    return this.isEnabled && this.permission === 'granted';
+  }
+  /**
    * 显示通知
    */
   async showNotification(options: NotificationOptions): Promise<Notification | null> {
-    const hasPermission = await this.requestPermission();
-    
-    if (!hasPermission) {
+    if (!this.isNotificationsEnabled()) {
       console.warn('没有通知权限，无法显示通知');
       return null;
     }
@@ -92,6 +137,8 @@ class NotificationManager {
    * 任务完成通知
    */
   async notifyTaskCompleted(chainName: string, streak: number) {
+    if (!this.isNotificationsEnabled()) return null;
+    
     return this.showNotification({
       title: '任务完成',
       body: `"${chainName}"已完成！当前记录: #${streak}`,
@@ -105,6 +152,8 @@ class NotificationManager {
    * 预约即将到期通知（剩余5分钟）
    */
   async notifyScheduleWarning(chainName: string, timeRemaining: string) {
+    if (!this.isNotificationsEnabled()) return null;
+    
     return this.showNotification({
       title: '预约即将到期',
       body: `"${chainName}"预约还剩${timeRemaining}，请准备开始任务！`,
@@ -118,6 +167,8 @@ class NotificationManager {
    * 预约失败通知
    */
   async notifyScheduleFailed(chainName: string) {
+    if (!this.isNotificationsEnabled()) return null;
+    
     return this.showNotification({
       title: '预约失败',
       body: `"${chainName}"预约时间已到期，需要进行规则判定`,
