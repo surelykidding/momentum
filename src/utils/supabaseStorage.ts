@@ -37,6 +37,12 @@ export class SupabaseStorage {
       auxiliarySignal: chain.auxiliary_signal,
       auxiliaryDuration: chain.auxiliary_duration,
       auxiliaryCompletionTrigger: chain.auxiliary_completion_trigger,
+      // 兼容：如果后端没有此字段，将为 undefined
+      isDurationless: (chain as any).is_durationless ?? false,
+      timeLimitHours: (chain as any).time_limit_hours ?? undefined,
+      timeLimitExceptions: Array.isArray((chain as any).time_limit_exceptions) ? (chain as any).time_limit_exceptions : [],
+      groupStartedAt: (chain as any).group_started_at ? new Date((chain as any).group_started_at) : undefined,
+      groupExpiresAt: (chain as any).group_expires_at ? new Date((chain as any).group_expires_at) : undefined,
       createdAt: new Date(chain.created_at || Date.now()),
       lastCompletedAt: chain.last_completed_at ? new Date(chain.last_completed_at) : undefined,
     }));
@@ -68,7 +74,7 @@ export class SupabaseStorage {
         parentId = null;
       }
 
-      const data = {
+      const data: any = {
         id: chain.id,
         name: chain.name,
         parent_id: parentId,
@@ -87,6 +93,12 @@ export class SupabaseStorage {
         auxiliary_signal: chain.auxiliarySignal,
         auxiliary_duration: chain.auxiliaryDuration,
         auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
+        // 兼容：后端新增列才会保存
+        is_durationless: chain.isDurationless ?? false,
+        time_limit_hours: chain.timeLimitHours ?? null,
+        time_limit_exceptions: chain.timeLimitExceptions ?? [],
+        group_started_at: chain.groupStartedAt ? chain.groupStartedAt.toISOString() : null,
+        group_expires_at: chain.groupExpiresAt ? chain.groupExpiresAt.toISOString() : null,
         created_at: chain.createdAt.toISOString(),
         last_completed_at: chain.lastCompletedAt?.toISOString(),
         user_id: user.id,

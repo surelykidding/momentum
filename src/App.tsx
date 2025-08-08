@@ -13,6 +13,7 @@ import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
 import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './utils/chainTree';
 import { notificationManager } from './utils/notifications';
+import { startGroupTimer, isGroupExpired, resetGroupProgress } from './utils/timeLimit';
 
 function App() {
   const [state, setState] = useState<AppState>({
@@ -289,6 +290,34 @@ function App() {
     }
   }, [storage, isInitialized]);
 
+  // 定期检查任务群过期状态
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const checkExpiredGroups = () => {
+      setState(prev => {
+        let hasChanges = false;
+        const updatedChains = prev.chains.map(chain => {
+          if (chain.type === 'group' && isGroupExpired(chain)) {
+            hasChanges = true;
+            return resetGroupProgress(chain);
+          }
+          return chain;
+        });
+
+        if (hasChanges) {
+          storage.saveChains(updatedChains);
+          return { ...prev, chains: updatedChains };
+        }
+        return prev;
+      });
+    };
+
+    // 每分钟检查一次
+    const interval = setInterval(checkExpiredGroups, 60000);
+    return () => clearInterval(interval);
+  }, [storage, isInitialized]);
+
   // Clean up expired scheduled sessions periodically
   useEffect(() => {
     if (!isInitialized) return;
@@ -475,8 +504,37 @@ function App() {
     const chain = state.chains.find(c => c.id === chainId);
     if (!chain) return;
 
-    // 如果是任务群，找到下一个待执行的单元
+    // 如果是任务群，检查时间限定
     if (chain.type === 'group') {
+      // 检查是否已过期
+      if (isGroupExpired(chain)) {
+        // 清空任务群进度
+        const updatedChains = state.chains.map(c =>
+          c.id === chainId ? resetGroupProgress(c) : c
+        );
+        
+        setState(prev => ({
+          ...prev,
+          chains: updatedChains,
+        }));
+        
+        // 显示过期通知
+        notificationManager.notifyTaskFailed(chain.name, '任务群已超时');
+        return;
+      }
+
+      // 如果任务群还没有开始计时，启动计时器
+      if (chain.timeLimitHours && !chain.groupStartedAt) {
+        const updatedChains = state.chains.map(c =>
+          c.id === chainId ? startGroupTimer(c) : c
+        );
+        
+        setState(prev => ({
+          ...prev,
+          chains: updatedChains,
+        }));
+      }
+
       const chainTree = buildChainTree(state.chains);
       const groupNode = chainTree.find(node => node.id === chainId);
       if (groupNode) {
@@ -492,7 +550,7 @@ function App() {
     const activeSession: ActiveSession = {
       chainId,
       startedAt: new Date(),
-      duration: chain.duration,
+      duration: chain.isDurationless ? 0 : chain.duration,
       isPaused: false,
       totalPausedTime: 0,
     };
