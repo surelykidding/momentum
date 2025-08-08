@@ -23,6 +23,8 @@ export interface Chain {
   timeLimitExceptions: string[]; // 时间限制例外规则
   groupStartedAt?: Date; // 任务群开始时间
   groupExpiresAt?: Date; // 任务群过期时间
+  // 无时长任务（手动结束）
+  isDurationless?: boolean; // 为 true 时不倒计时，由用户手动结束
   createdAt: Date;
   lastCompletedAt?: Date;
 }

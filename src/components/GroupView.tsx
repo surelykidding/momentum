@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChainTreeNode, ScheduledSession } from '../types';
-import { ArrowLeft, Play, Plus, Users, Target, Import } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Users, Target, Import, Pencil } from 'lucide-react';
 import { getGroupProgress, getNextUnitInGroup, getChainTypeConfig } from '../utils/chainTree';
 import { formatTime } from '../utils/time';
 import { getGroupTimeStatus } from '../utils/timeLimit';
@@ -181,7 +181,16 @@ export const GroupView: React.FC<GroupViewProps> = ({
               <Import size={16} />
               <span>导入单元</span>
             </button>
-            
+
+            <button
+              onClick={() => onEditChain(group.id)}
+              className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 font-chinese"
+              title="编辑任务群"
+            >
+              <Pencil size={16} />
+              <span>编辑任务群</span>
+            </button>
+
             {nextUnit && (
               <button
                 onClick={() => onStartChain(nextUnit.id)}

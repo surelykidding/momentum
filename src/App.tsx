@@ -550,7 +550,7 @@ function App() {
     const activeSession: ActiveSession = {
       chainId,
       startedAt: new Date(),
-      duration: chain.duration,
+      duration: chain.isDurationless ? 0 : chain.duration,
       isPaused: false,
       totalPausedTime: 0,
     };
