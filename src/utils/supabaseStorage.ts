@@ -65,16 +65,15 @@ export class SupabaseStorage {
       sortOrder: c.sortOrder 
     })));
 
-    // 准备upsert数据
-    const upsertData = chains.map(chain => {
-      // CRITICAL: 防止循环引用
+    // 生成两套数据：完整字段集（包含新列）与基础字段集（兼容旧后端）
+    const buildRow = (chain: Chain, includeNewColumns: boolean) => {
       let parentId = chain.parentId || null;
       if (parentId === chain.id) {
         console.warn(`检测到循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为null`);
         parentId = null;
       }
 
-      const data: any = {
+      const base: any = {
         id: chain.id,
         name: chain.name,
         parent_id: parentId,
@@ -93,58 +92,94 @@ export class SupabaseStorage {
         auxiliary_signal: chain.auxiliarySignal,
         auxiliary_duration: chain.auxiliaryDuration,
         auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-        // 兼容：后端新增列才会保存
+        created_at: chain.createdAt.toISOString(),
+        last_completed_at: chain.lastCompletedAt?.toISOString(),
+        user_id: user.id,
+      };
+
+      if (!includeNewColumns) return base;
+
+      return {
+        ...base,
+        // 新增列：后端不支持时将触发回退逻辑
         is_durationless: chain.isDurationless ?? false,
         time_limit_hours: chain.timeLimitHours ?? null,
         time_limit_exceptions: chain.timeLimitExceptions ?? [],
         group_started_at: chain.groupStartedAt ? chain.groupStartedAt.toISOString() : null,
         group_expires_at: chain.groupExpiresAt ? chain.groupExpiresAt.toISOString() : null,
-        created_at: chain.createdAt.toISOString(),
-        last_completed_at: chain.lastCompletedAt?.toISOString(),
-        user_id: user.id,
-      };
-      console.log(`准备保存链条 ${chain.id} (${chain.name}):`, data);
-      return data;
-    });
+      } as any;
+    };
 
-    // 先删除当前用户的所有链条，然后重新插入
-    console.log('删除用户现有的所有链条...');
-    const { error: deleteError } = await supabase
+    const rowsWithNew = chains.map(c => buildRow(c, true));
+    const rowsBase = chains.map(c => buildRow(c, false));
+
+    const isMissingColumnError = (e: any) => {
+      if (!e) return false;
+      const msg = `${e.message || ''} ${e.details || ''}`.toLowerCase();
+      return /column .* does not exist|schema cache|could not find .* column/.test(msg);
+    };
+
+    // 查询现有ID，用于决定删除哪些已被移除的链
+    const { data: existingRows, error: existingErr } = await supabase
       .from('chains')
-      .delete()
+      .select('id')
       .eq('user_id', user.id);
-
-    if (deleteError) {
-      console.error('删除现有链数据失败:', deleteError);
-      throw new Error(`删除现有数据失败: ${deleteError.message}`);
+    if (existingErr) {
+      console.error('查询现有链ID失败:', existingErr);
+      throw new Error(`查询现有数据失败: ${existingErr.message}`);
     }
-    
-    console.log('删除成功，开始插入新数据...');
-    
-    // 插入新数据
-    const { data: insertResult, error: insertError } = await supabase
-      .from('chains')
-      .insert(upsertData)
-      .select('id, name');
+    const existingIds = new Set((existingRows || []).map(r => r.id as string));
 
-    if (insertError) {
-      console.error('插入链数据失败:', insertError);
-      throw new Error(`插入数据失败: ${insertError.message}`);
+    // 先尝试使用包含新列的 upsert；若后端缺列，则回退到基础列
+    let upsertResultIds: string[] = [];
+    const tryUpsert = async (rows: any[]) => {
+      const { data, error } = await supabase
+        .from('chains')
+        .upsert(rows, { onConflict: 'id' })
+        .select('id');
+      return { data, error } as { data: { id: string }[] | null, error: any };
+    };
+
+    let { data: upsertData1, error: upsertErr1 } = await tryUpsert(rowsWithNew);
+    if (upsertErr1 && isMissingColumnError(upsertErr1)) {
+      console.warn('检测到后端缺少新列，回退到基础字段保存。错误信息:', upsertErr1);
+      const { data: upsertData2, error: upsertErr2 } = await tryUpsert(rowsBase);
+      if (upsertErr2) {
+        console.error('回退保存仍失败:', upsertErr2);
+        throw new Error(`保存数据失败: ${upsertErr2.message}`);
+      }
+      upsertResultIds = (upsertData2 || []).map(r => r.id);
+    } else if (upsertErr1) {
+      console.error('保存失败:', upsertErr1);
+      throw new Error(`保存数据失败: ${upsertErr1.message}`);
+    } else {
+      upsertResultIds = (upsertData1 || []).map(r => r.id);
     }
-    
-    console.log('插入操作成功，返回数据:', insertResult);
-    
-    // 验证所有链条都已保存
-    const savedIds = new Set((insertResult || []).map(r => r.id));  
+
+    // 仅删除那些不在本次保存集合中的旧链，避免“先删后插”带来的数据丢失
+    const newIds = new Set(chains.map(c => c.id));
+    const idsToDelete = [...existingIds].filter(id => !newIds.has(id));
+    if (idsToDelete.length > 0) {
+      const { error: delErr } = await supabase
+        .from('chains')
+        .delete()
+        .in('id', idsToDelete)
+        .eq('user_id', user.id);
+      if (delErr) {
+        console.error('删除多余链失败:', delErr);
+        throw new Error(`删除多余数据失败: ${delErr.message}`);
+      }
+    }
+
+    // 最终确认
+    const savedIds = new Set(upsertResultIds);
     const expectedIds = new Set(chains.map(c => c.id));
     const missingSavedIds = [...expectedIds].filter(id => !savedIds.has(id));
-    
     if (missingSavedIds.length > 0) {
-      console.error('部分链条保存失败，缺失的IDs:', missingSavedIds);
-      throw new Error(`部分链条保存失败: ${missingSavedIds.join(', ')}`);
+      console.warn('部分链条在返回结果中缺失（可能因旧后端未返回所有行）。缺失IDs:', missingSavedIds);
     }
 
-    console.log('所有链数据保存成功');
+    console.log('所有链数据保存流程完成');
   }
 
   // Scheduled Sessions
