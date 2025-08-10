@@ -421,7 +421,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                 </div>
               )}
 
-              {/* 新规则输入 */
+              {/* 新规则输入 */}
               {!useExistingRule && (
                 <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-2xl p-6">
                   <label className="block text-yellow-700 dark:text-yellow-300 text-sm font-medium mb-3 font-chinese">
