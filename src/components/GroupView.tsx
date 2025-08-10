@@ -113,6 +113,13 @@ export const GroupView: React.FC<GroupViewProps> = ({
               >
                 <i className="fas fa-edit text-sm"></i>
               </button>
+              <button
+                onClick={() => onDeleteChain(unit.id)}
+                className="p-2 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                title="删除单元"
+              >
+                <i className="fas fa-trash text-sm"></i>
+              </button>
 
               {!isCompleted && (
                 <>

@@ -202,6 +202,7 @@ function App() {
               onCancelScheduledSession={handleCancelScheduledSession}
               onDeleteChain={handleDeleteChain}
               onImportChains={handleImportChains}
+              history={state.completionHistory}
             />
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
@@ -851,22 +852,34 @@ function App() {
     });
   };
 
-  const handleImportChains = async (importedChains: Chain[]) => {
+  const handleImportChains = async (importedChains: Chain[], options?: { history?: CompletionHistory[] }) => {
     console.log('开始导入链数据...', importedChains);
     
     try {
       // 合并导入的链条到现有链条中
       const updatedChains = [...state.chains, ...importedChains];
+      const importedHistory = options?.history || [];
       
       console.log('准备保存导入的数据到存储...');
       // Wait for data to be saved before updating UI
       await storage.saveChains(updatedChains);
+      if (Array.isArray(importedHistory) && importedHistory.length > 0) {
+        const existing = await storage.getCompletionHistory();
+        const merged = [
+          ...existing,
+          ...importedHistory,
+        ];
+        await storage.saveCompletionHistory(merged);
+      }
       console.log('导入数据保存成功，更新UI状态');
       
       // Only update state after successful save
       setState(prev => ({
         ...prev,
         chains: updatedChains,
+        completionHistory: Array.isArray(importedHistory) && importedHistory.length > 0
+          ? [...prev.completionHistory, ...importedHistory]
+          : prev.completionHistory,
       }));
       console.log('导入完成，UI状态更新完成');
     } catch (error) {

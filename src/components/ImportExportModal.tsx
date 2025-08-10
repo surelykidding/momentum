@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Chain } from '../types';
+import { Chain, CompletionHistory } from '../types';
 import { Download, Upload, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface ImportExportModalProps {
   chains: Chain[];
-  onImport: (chains: Chain[]) => void;
+  history?: CompletionHistory[];
+  onImport: (chains: Chain[], options?: { history?: CompletionHistory[] }) => void;
   onClose: () => void;
 }
 
 export const ImportExportModal: React.FC<ImportExportModalProps> = ({
   chains,
+  history,
   onImport,
   onClose,
 }) => {
@@ -26,6 +28,10 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
         ...chain,
         createdAt: chain.createdAt.toISOString(),
         lastCompletedAt: chain.lastCompletedAt?.toISOString(),
+      })),
+      completionHistory: (history || []).map(h => ({
+        ...h,
+        completedAt: h.completedAt.toISOString(),
       })),
     };
 
@@ -60,6 +66,15 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
         throw new Error('无效的数据格式：缺少chains数组');
       }
 
+      // 旧ID -> 新ID 映射，确保父子关系正确迁移
+      const idMap = new Map<string, string>();
+
+      // 预先为每个导入链生成新ID
+      parsedData.chains.forEach((chain: any) => {
+        const newId = crypto.randomUUID();
+        idMap.set(chain.id || crypto.randomUUID(), newId);
+      });
+
       // 转换和验证链数据
       const importedChains: Chain[] = parsedData.chains.map((chain: any, index: number) => {
         // 验证必需字段
@@ -71,30 +86,41 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
         }
 
         return {
-          id: crypto.randomUUID(), // 生成新的ID避免冲突
+          id: idMap.get(chain.id) || crypto.randomUUID(), // 新ID
           name: chain.name,
-          parentId: chain.parentId,
+          parentId: chain.parentId ? idMap.get(chain.parentId) : undefined, // 维护层级
           type: chain.type || 'unit',
           sortOrder: chain.sortOrder || Math.floor(Date.now() / 1000) + index,
           trigger: chain.trigger,
           duration: Number(chain.duration) || 45,
           description: chain.description,
-          currentStreak: 0, // 重置为0
-          auxiliaryStreak: 0, // 重置为0
-          totalCompletions: 0, // 重置为0
-          totalFailures: 0, // 重置为0
-          auxiliaryFailures: 0, // 重置为0
+          // 保留导入前的统计与历史指标
+          currentStreak: Number(chain.currentStreak) || 0,
+          auxiliaryStreak: Number(chain.auxiliaryStreak) || 0,
+          totalCompletions: Number(chain.totalCompletions) || 0,
+          totalFailures: Number(chain.totalFailures) || 0,
+          auxiliaryFailures: Number(chain.auxiliaryFailures) || 0,
           exceptions: Array.isArray(chain.exceptions) ? chain.exceptions : [],
           auxiliaryExceptions: Array.isArray(chain.auxiliaryExceptions) ? chain.auxiliaryExceptions : [],
           auxiliarySignal: chain.auxiliarySignal,
           auxiliaryDuration: Number(chain.auxiliaryDuration) || 15,
           auxiliaryCompletionTrigger: chain.auxiliaryCompletionTrigger,
-          createdAt: new Date(),
-          lastCompletedAt: undefined,
+          createdAt: chain.createdAt ? new Date(chain.createdAt) : new Date(),
+          lastCompletedAt: chain.lastCompletedAt ? new Date(chain.lastCompletedAt) : undefined,
         };
       });
 
-      onImport(importedChains);
+      // 兼容导入历史记录
+      const importedHistory: CompletionHistory[] = (parsedData.completionHistory || []).map((h: any) => ({
+        chainId: idMap.get(h.chainId) || h.chainId,
+        completedAt: new Date(h.completedAt),
+        duration: Number(h.duration) || 0,
+        wasSuccessful: !!h.wasSuccessful,
+        reasonForFailure: h.reasonForFailure,
+      }));
+
+      // 将链与历史一起传递，交由上层合并存储
+      onImport(importedChains, { history: importedHistory });
       setImportStatus('success');
       
       // 3秒后自动关闭
@@ -217,8 +243,8 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
                 导出任务链数据
               </h3>
               <p className="text-blue-700 dark:text-blue-300 text-sm mb-4 font-chinese leading-relaxed">
-                导出功能将保存您当前的所有任务链配置，包括链条设置、类型、描述等信息。
-                注意：不会导出历史记录和统计数据，导出的链条记录将重置为0。
+                导出功能将保存您当前的所有任务链配置与统计（可选兼容历史记录）。
+                从新版开始，导出文件可包含完成记录与时间信息，导入后可继续累计。
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm text-blue-600 dark:text-blue-400">
                 <div className="flex items-center space-x-2">

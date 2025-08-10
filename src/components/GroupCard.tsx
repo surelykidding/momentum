@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChainTreeNode, ScheduledSession } from '../types';
 import { Play, Clock, Users } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
-import { getGroupProgress, getChainTypeConfig } from '../utils/chainTree';
+import { getGroupProgress, getChainTypeConfig, getNextUnitInGroup } from '../utils/chainTree';
 import { notificationManager } from '../utils/notifications';
 
 interface GroupCardProps {
@@ -30,8 +30,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const [hasShownWarning, setHasShownWarning] = useState(false);
 
   const progress = getGroupProgress(group);
+  const nextUnit = getNextUnitInGroup(group);
   const typeConfig = getChainTypeConfig(group.type);
-  const isScheduled = scheduledSession && timeRemaining > 0;
+  const isScheduled = !!scheduledSession && timeRemaining > 0;
 
   // 计算通知时机
   const getNotificationThreshold = (durationMinutes: number) => {
@@ -42,7 +43,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   React.useEffect(() => {
     if (!scheduledSession) return;
 
-    const notificationThreshold = getNotificationThreshold(group.auxiliaryDuration);
+    // 预约应以“下一个单元”的设置为准
+    const durationForWarning = nextUnit ? nextUnit.auxiliaryDuration : group.auxiliaryDuration;
+    const notificationThreshold = getNotificationThreshold(durationForWarning);
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
@@ -67,7 +70,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration]);
+  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration, nextUnit?.auxiliaryDuration]);
 
   // 重置警告状态当预约会话改变时
   React.useEffect(() => {
@@ -182,9 +185,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
         {isScheduled && (
           <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 rounded-2xl p-4 mb-6 border border-blue-200/50 dark:border-blue-400/30">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center space-x-2 text-blue-600">
                 <i className="fas fa-bell text-sm"></i>
-                <span className="text-sm font-chinese font-medium">预约信号: {scheduledSession.auxiliarySignal}</span>
+              <span className="text-sm font-chinese font-medium">预约信号: {scheduledSession.auxiliarySignal}</span>
               </div>
               <div className="text-blue-700 dark:text-blue-400 font-mono font-bold text-lg">
                 {formatDuration(timeRemaining)}
@@ -193,7 +196,10 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onCancelScheduledSession?.(group.id);
+                // 取消的是具体已预约的单元
+                if (scheduledSession) {
+                  onCancelScheduledSession?.(scheduledSession.chainId);
+                }
               }}
               className="w-full bg-red-500/10 hover:bg-red-500/20 dark:bg-red-500/20 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 px-3 py-3 rounded-xl text-sm transition-colors duration-200 flex items-center justify-center space-x-2 border border-red-200/50 dark:border-red-400/30"
             >
@@ -206,7 +212,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
         {/* Action buttons */}
         <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={() => onStartChain(group.id)}
+            onClick={() => onStartChain(nextUnit ? nextUnit.id : group.id)}
             className="flex-1 gradient-primary hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
           >
             <Play size={16} />
@@ -215,7 +221,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
           
           {!isScheduled && (
             <button
-              onClick={() => onScheduleChain(group.id)}
+              onClick={() => onScheduleChain(nextUnit ? nextUnit.id : group.id)}
               className="flex-1 gradient-dark hover:shadow-xl text-white px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-105 shadow-lg"
             >
               <i className="fas fa-clock"></i>

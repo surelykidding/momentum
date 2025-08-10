@@ -1,10 +1,11 @@
 import React from 'react';
-import { Chain, ScheduledSession } from '../types';
+import { Chain, ScheduledSession, CompletionHistory } from '../types';
 import { ChainCard } from './ChainCard';
 import { GroupCard } from './GroupCard';
 import { ThemeToggle } from './ThemeToggle';
 import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
+import { getNextUnitInGroup } from '../utils/chainTree';
 import { getChainTypeConfig } from '../utils/chainTree';
 import { Plus, Download } from 'lucide-react';
 import { notificationManager } from '../utils/notifications';
@@ -20,7 +21,8 @@ interface DashboardProps {
   onViewChainDetail: (chainId: string) => void;
   onCancelScheduledSession?: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
-  onImportChains: (chains: Chain[]) => void;
+  onImportChains: (chains: Chain[], options?: { history?: CompletionHistory[] }) => void;
+  history?: CompletionHistory[];
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -34,6 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCancelScheduledSession,
   onDeleteChain,
   onImportChains,
+  history,
 }) => {
   const [showImportExport, setShowImportExport] = React.useState(false);
   
@@ -122,7 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
                 >
                   <Download size={16} />
-                  <span className="font-chinese font-medium">导入数据</span>
+                  <span className="font-chinese font-medium">数据管理</span>
                 </button>
               </div>
             </div>
@@ -144,7 +147,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
                 >
                   <Download size={16} />
-                  <span className="font-chinese font-medium">导入数据</span>
+                  <span className="font-chinese font-medium">数据管理</span>
                 </button>
                 <button
                   onClick={onCreateChain}
@@ -159,16 +162,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {topLevelChains.map(chainNode => (
                 chainNode.type === 'group' ? (
-                  <GroupCard
-                    key={chainNode.id}
-                    group={chainNode}
-                    scheduledSession={getScheduledSession(chainNode.id)}
-                    onStartChain={onStartChain}
-                    onScheduleChain={onScheduleChain}
-                    onViewDetail={onViewChainDetail}
-                    onCancelScheduledSession={onCancelScheduledSession}
-                    onDelete={onDeleteChain}
-                  />
+                  (() => {
+                    const nextUnit = getNextUnitInGroup(chainNode);
+                    const session = getScheduledSession(nextUnit ? nextUnit.id : chainNode.id);
+                    return (
+                      <GroupCard
+                        key={chainNode.id}
+                        group={chainNode}
+                        scheduledSession={session}
+                        onStartChain={onStartChain}
+                        onScheduleChain={onScheduleChain}
+                        onViewDetail={onViewChainDetail}
+                        onCancelScheduledSession={onCancelScheduledSession}
+                        onDelete={onDeleteChain}
+                      />
+                    );
+                  })()
                 ) : (
                   <ChainCard
                     key={chainNode.id}
@@ -191,7 +200,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {showImportExport && (
         <ImportExportModal
           chains={chains}
-          onImport={onImportChains}
+          history={history}
+          onImport={(newChains, options) => onImportChains(newChains, options)}
           onClose={() => setShowImportExport(false)}
         />
       )}
