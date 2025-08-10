@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActiveSession, Chain } from '../types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatDuration } from '../utils/time';
@@ -29,6 +29,14 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const [interruptReason, setInterruptReason] = useState('');
   const [selectedExistingRule, setSelectedExistingRule] = useState('');
   const [useExistingRule, setUseExistingRule] = useState(false);
+  // 添加新规则后的动作：complete 完成 / pause 暂停 / only 仅添加
+  const [addAction, setAddAction] = useState<'complete' | 'pause' | 'only'>('only');
+  const [pauseMinutes, setPauseMinutes] = useState<number>(15);
+  // 暂停后自动恢复
+  const AUTO_RESUME_STORAGE_KEY = 'momentum_auto_resume';
+  const [autoResumeAt, setAutoResumeAt] = useState<number | null>(null);
+  const [resumeCountdown, setResumeCountdown] = useState<number>(0);
+  const resumeTimeoutRef = useRef<number | null>(null);
 
   const isDurationless = !!chain.isDurationless || session.duration === 0;
 
@@ -96,11 +104,32 @@ export const FocusMode: React.FC<FocusModeProps> = ({
 
   const handleJudgmentAllow = () => {
     const ruleToAdd = useExistingRule ? selectedExistingRule : interruptReason.trim();
-    if (ruleToAdd) {
-      if (!useExistingRule && !chain.exceptions.includes(ruleToAdd)) {
-        onAddException(ruleToAdd);
+    if (!ruleToAdd) return;
+
+    // 使用已有规则：直接完成任务（不重复添加）
+    if (useExistingRule) {
+      onComplete();
+      setShowInterruptWarning(false);
+      return;
+    }
+
+    // 添加新规则
+    if (!chain.exceptions.includes(ruleToAdd)) {
+      onAddException(ruleToAdd);
+    }
+
+    if (addAction === 'complete') {
+      // 添加并提前完成
+      clearAutoResumeSchedule();
+      onComplete();
+    } else if (addAction === 'pause') {
+      // 添加并暂停，可选择自动恢复
+      onPause();
+      if (pauseMinutes && pauseMinutes > 0) {
+        scheduleAutoResume(pauseMinutes);
       }
     }
+
     setShowInterruptWarning(false);
   };
 
@@ -119,7 +148,104 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     setInterruptReason('');
     setSelectedExistingRule('');
     setUseExistingRule(false);
+    setAddAction('only');
+    setPauseMinutes(15);
   };
+
+  // —— 自动恢复相关 ——
+  const clearAutoResumeSchedule = () => {
+    try {
+      const dataStr = localStorage.getItem(AUTO_RESUME_STORAGE_KEY);
+      if (dataStr) {
+        const data = JSON.parse(dataStr);
+        if (data.chainId === session.chainId) {
+          localStorage.removeItem(AUTO_RESUME_STORAGE_KEY);
+        }
+      }
+    } catch {}
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+      resumeTimeoutRef.current = null;
+    }
+    setAutoResumeAt(null);
+    setResumeCountdown(0);
+  };
+
+  const setupAutoResumeTimer = (resumeTime: number) => {
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+    }
+    const delay = Math.max(0, resumeTime - Date.now());
+    if (delay === 0) {
+      clearAutoResumeSchedule();
+      onResume();
+      return;
+    }
+    resumeTimeoutRef.current = window.setTimeout(() => {
+      onResume();
+      clearAutoResumeSchedule();
+    }, delay);
+  };
+
+  const scheduleAutoResume = (minutes: number) => {
+    const resumeTime = Date.now() + minutes * 60 * 1000;
+    setAutoResumeAt(resumeTime);
+    try {
+      localStorage.setItem(
+        AUTO_RESUME_STORAGE_KEY,
+        JSON.stringify({
+          chainId: session.chainId,
+          startedAt: session.startedAt.toISOString(),
+          resumeAt: new Date(resumeTime).toISOString(),
+        })
+      );
+    } catch {}
+    setupAutoResumeTimer(resumeTime);
+  };
+
+  // 加载已有的自动恢复计划（仅当当前会话处于暂停状态时）
+  useEffect(() => {
+    if (!session.isPaused) return;
+    try {
+      const dataStr = localStorage.getItem(AUTO_RESUME_STORAGE_KEY);
+      if (!dataStr) return;
+      const data = JSON.parse(dataStr);
+      if (data.chainId === session.chainId && data.startedAt === session.startedAt.toISOString()) {
+        const ts = new Date(data.resumeAt).getTime();
+        if (ts > Date.now()) {
+          setAutoResumeAt(ts);
+          setupAutoResumeTimer(ts);
+        } else {
+          // 已经过期，直接恢复
+          clearAutoResumeSchedule();
+          onResume();
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.isPaused, session.chainId, session.startedAt]);
+
+  // 倒计时显示
+  useEffect(() => {
+    if (!session.isPaused || !autoResumeAt) return;
+    setResumeCountdown(Math.max(0, Math.ceil((autoResumeAt - Date.now()) / 1000)));
+    const interval = window.setInterval(() => {
+      const secs = Math.max(0, Math.ceil((autoResumeAt - Date.now()) / 1000));
+      setResumeCountdown(secs);
+      if (secs <= 0) {
+        window.clearInterval(interval);
+      }
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [autoResumeAt, session.isPaused]);
+
+  // 如果用户手动继续或任务完成/中断后，清理自动恢复计划
+  useEffect(() => {
+    if (!session.isPaused) {
+      clearAutoResumeSchedule();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.isPaused]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-[#161615] dark:via-black dark:to-[#161615] flex items-center justify-center relative overflow-hidden">
@@ -184,6 +310,33 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                 <button onClick={onComplete} className="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300">提前完成</button>
               </>
             )}
+          </div>
+        )}
+
+        {session.isPaused && (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="text-gray-700 dark:text-gray-300 font-chinese">
+              已暂停{autoResumeAt ? `，将于 ${Math.max(1, Math.ceil(resumeCountdown / 60))} 分钟内自动继续` : ''}
+            </div>
+            <div className="flex items-center justify-center space-x-4">
+              <button
+                onClick={() => {
+                  clearAutoResumeSchedule();
+                  onResume();
+                }}
+                className="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300"
+              >
+                继续
+              </button>
+              {autoResumeAt && (
+                <button
+                  onClick={clearAutoResumeSchedule}
+                  className="px-6 py-3 rounded-2xl bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-900 dark:text-white font-chinese transition-all duration-300"
+                >
+                  取消自动继续
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -268,7 +421,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                 </div>
               )}
 
-              {/* 新规则输入 */}
+              {/* 新规则输入 */
               {!useExistingRule && (
                 <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-2xl p-6">
                   <label className="block text-yellow-700 dark:text-yellow-300 text-sm font-medium mb-3 font-chinese">
@@ -289,6 +442,58 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {/* 添加规则后的动作 */}
+                  <div className="mt-6 space-y-3">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 font-chinese">添加规则后执行：</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="addAction"
+                          checked={addAction === 'complete'}
+                          onChange={() => setAddAction('complete')}
+                          className="w-5 h-5 text-green-500 focus:ring-green-500"
+                        />
+                        <span className="text-green-700 dark:text-green-300 text-sm font-chinese">添加并提前完成</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="addAction"
+                          checked={addAction === 'pause'}
+                          onChange={() => setAddAction('pause')}
+                          className="w-5 h-5 text-yellow-500 focus:ring-yellow-500"
+                        />
+                        <span className="text-yellow-700 dark:text-yellow-300 text-sm font-chinese">添加并暂停</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="addAction"
+                          checked={addAction === 'only'}
+                          onChange={() => setAddAction('only')}
+                          className="w-5 h-5 text-gray-500 focus:ring-gray-500"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300 text-sm font-chinese">仅添加规则</span>
+                      </label>
+                    </div>
+
+                    {addAction === 'pause' && (
+                      <div className="flex items-center space-x-3 mt-2">
+                        <span className="text-sm text-yellow-700 dark:text-yellow-300 font-chinese">暂停</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={180}
+                          value={pauseMinutes}
+                          onChange={(e) => setPauseMinutes(parseInt(e.target.value || '15') || 15)}
+                          className="w-20 bg-white dark:bg-gray-800/50 border border-yellow-300 dark:border-yellow-500/30 rounded-xl px-3 py-2 text-gray-900 dark:text-white text-center font-mono"
+                        />
+                        <span className="text-sm text-yellow-700 dark:text-yellow-300 font-chinese">分钟后自动继续（可手动继续）</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -315,7 +520,13 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               >
                 <div className="text-left">
                   <div className="font-bold text-lg">
-                    {useExistingRule ? '使用例外规则完成任务' : '判定允许（下必为例）'}
+                    {useExistingRule 
+                      ? '使用例外规则完成任务' 
+                      : addAction === 'complete' 
+                        ? '添加并提前完成' 
+                        : addAction === 'pause'
+                          ? '添加并暂停' 
+                          : '仅添加规则'}
                   </div>
                   <div className={`text-sm ${useExistingRule ? 'text-green-200' : 'text-yellow-200'}`}>
                     {useExistingRule 
@@ -340,6 +551,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
                   <i className="fas fa-list text-primary-500"></i>
                   <span>当前例外规则：</span>
                 </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-chinese">以下为你历史上添加过的例外规则记录，可在本弹窗中新增并选择“添加后的操作”。</p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {chain.exceptions.map((exception, index) => (
                     <div key={index} className="text-yellow-600 dark:text-yellow-300 text-sm flex items-center space-x-2">
