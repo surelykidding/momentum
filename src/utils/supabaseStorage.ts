@@ -1,5 +1,5 @@
 import { supabase, getCurrentUser } from '../lib/supabase';
-import { Chain, ScheduledSession, ActiveSession, CompletionHistory } from '../types';
+import { Chain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
 
 export class SupabaseStorage {
   // Chains
@@ -350,6 +350,117 @@ export class SupabaseStorage {
       if (error) {
         console.error('Error saving completion history:', error);
       }
+    }
+  }
+
+  // RSIP nodes
+  async getRSIPNodes(): Promise<RSIPNode[]> {
+    const user = await getCurrentUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('rsip_nodes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching RSIP nodes:', error);
+      return [];
+    }
+
+    return (data || []).map(row => ({
+      id: row.id,
+      parentId: row.parent_id || undefined,
+      title: row.title,
+      rule: row.rule,
+      sortOrder: row.sort_order,
+      createdAt: new Date(row.created_at),
+      useTimer: (row as any).use_timer ?? false,
+      timerMinutes: (row as any).timer_minutes ?? undefined,
+    }));
+  }
+
+  async saveRSIPNodes(nodes: RSIPNode[]): Promise<void> {
+    const user = await getCurrentUser();
+    if (!user) return;
+
+    // Upsert all nodes for user
+    const rows = nodes.map(n => ({
+      id: n.id,
+      parent_id: n.parentId || null,
+      title: n.title,
+      rule: n.rule,
+      sort_order: n.sortOrder,
+      created_at: n.createdAt.toISOString(),
+      use_timer: n.useTimer ?? false,
+      timer_minutes: n.timerMinutes ?? null,
+      user_id: user.id,
+    }));
+
+    // Fetch existing ids to delete removed ones
+    const { data: existingRows, error: existingErr } = await supabase
+      .from('rsip_nodes')
+      .select('id')
+      .eq('user_id', user.id);
+    if (existingErr) {
+      console.error('查询现有RSIP节点失败:', existingErr);
+      throw new Error(`查询现有RSIP节点失败: ${existingErr.message}`);
+    }
+    const existingIds = new Set((existingRows || []).map(r => r.id as string));
+    const newIds = new Set(nodes.map(n => n.id));
+    const idsToDelete = [...existingIds].filter(id => !newIds.has(id));
+
+    if (idsToDelete.length > 0) {
+      const { error: delErr } = await supabase
+        .from('rsip_nodes')
+        .delete()
+        .in('id', idsToDelete)
+        .eq('user_id', user.id);
+      if (delErr) {
+        console.error('删除多余RSIP节点失败:', delErr);
+        throw new Error(`删除多余RSIP节点失败: ${delErr.message}`);
+      }
+    }
+
+    const { error } = await supabase
+      .from('rsip_nodes')
+      .upsert(rows, { onConflict: 'id' });
+    if (error) {
+      console.error('Error saving RSIP nodes:', error);
+      throw new Error(`保存RSIP节点失败: ${error.message}`);
+    }
+  }
+
+  async getRSIPMeta(): Promise<RSIPMeta> {
+    const user = await getCurrentUser();
+    if (!user) return {};
+    const { data, error } = await supabase
+      .from('rsip_meta')
+      .select('*')
+      .eq('user_id', user.id)
+      .limit(1);
+    if (error || !data || data.length === 0) return {};
+    const row = data[0];
+    return {
+      lastAddedAt: row.last_added_at ? new Date(row.last_added_at) : undefined,
+      allowMultiplePerDay: !!row.allow_multiple_per_day,
+    };
+  }
+
+  async saveRSIPMeta(meta: RSIPMeta): Promise<void> {
+    const user = await getCurrentUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from('rsip_meta')
+      .upsert({
+        user_id: user.id,
+        last_added_at: meta.lastAddedAt ? meta.lastAddedAt.toISOString() : null,
+        allow_multiple_per_day: !!meta.allowMultiplePerDay,
+      }, { onConflict: 'user_id' });
+    if (error) {
+      console.error('保存RSIP元数据失败:', error);
+      throw new Error(`保存RSIP元数据失败: ${error.message}`);
     }
   }
 }

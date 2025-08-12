@@ -69,7 +69,30 @@ export interface CompletionHistory {
   reasonForFailure?: string;
 }
 
-export type ViewState = 'dashboard' | 'editor' | 'focus' | 'detail' | 'group';
+// RSIP（递归稳态迭代协议）类型定义
+export interface RSIPNode {
+  id: string;
+  parentId?: string; // 父节点ID
+  title: string; // 国策/定式名称
+  rule: string; // 精准、可执行的规则描述
+  sortOrder: number; // 排序（同一父节点下）
+  createdAt: Date; // 创建时间
+  // 可选的计时配置（参考神圣座位预约时长逻辑）
+  useTimer?: boolean;
+  timerMinutes?: number; // 倒计时分钟数
+}
+
+export interface RSIPTreeNode extends RSIPNode {
+  children: RSIPTreeNode[];
+  depth: number;
+}
+
+export interface RSIPMeta {
+  lastAddedAt?: Date; // 最近一次添加国策的日期（用于“一天最多添加一个”限制）
+  allowMultiplePerDay?: boolean; // 是否允许一天添加多条
+}
+
+export type ViewState = 'dashboard' | 'editor' | 'focus' | 'detail' | 'group' | 'rsip';
 
 export interface AppState {
   chains: Chain[];
@@ -79,4 +102,7 @@ export interface AppState {
   editingChain: Chain | null;
   viewingChainId: string | null;
   completionHistory: CompletionHistory[];
+  // RSIP
+  rsipNodes: RSIPNode[];
+  rsipMeta: RSIPMeta;
 }

@@ -1,10 +1,12 @@
-import { Chain, ScheduledSession, ActiveSession, CompletionHistory } from '../types';
+import { Chain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
 
 const STORAGE_KEYS = {
   CHAINS: 'momentum_chains',
   SCHEDULED_SESSIONS: 'momentum_scheduled_sessions',
   ACTIVE_SESSION: 'momentum_active_session',
   COMPLETION_HISTORY: 'momentum_completion_history',
+  RSIP_NODES: 'momentum_rsip_nodes',
+  RSIP_META: 'momentum_rsip_meta',
 };
 
 export const storage = {
@@ -70,5 +72,40 @@ export const storage = {
 
   saveCompletionHistory: (history: CompletionHistory[]): void => {
     localStorage.setItem(STORAGE_KEYS.COMPLETION_HISTORY, JSON.stringify(history));
+  },
+
+  // RSIP nodes
+  getRSIPNodes: (): RSIPNode[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.RSIP_NODES);
+    if (!data) return [];
+    return JSON.parse(data).map((node: any) => ({
+      ...node,
+      createdAt: new Date(node.createdAt),
+    }));
+  },
+
+  saveRSIPNodes: (nodes: RSIPNode[]): void => {
+    localStorage.setItem(STORAGE_KEYS.RSIP_NODES, JSON.stringify(nodes));
+  },
+
+  getRSIPMeta: (): RSIPMeta => {
+    const data = localStorage.getItem(STORAGE_KEYS.RSIP_META);
+    if (!data) return {};
+    const parsed = JSON.parse(data);
+    return {
+      lastAddedAt: parsed.lastAddedAt ? new Date(parsed.lastAddedAt) : undefined,
+      allowMultiplePerDay: !!parsed.allowMultiplePerDay,
+    } as RSIPMeta;
+  },
+
+  saveRSIPMeta: (meta: RSIPMeta): void => {
+    localStorage.setItem(
+      STORAGE_KEYS.RSIP_META,
+      JSON.stringify({
+        ...meta,
+        lastAddedAt: meta.lastAddedAt ? meta.lastAddedAt.toISOString() : undefined,
+        allowMultiplePerDay: !!meta.allowMultiplePerDay,
+      })
+    );
   },
 };

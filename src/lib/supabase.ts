@@ -33,7 +33,7 @@ export const signUp = async (email: string, password: string) => {
       password,
     });
     return { data, error };
-  } catch (networkError) {
+  } catch {
     return { data: null, error: { message: 'Network error: Unable to connect to Supabase' } };
   }
 };
@@ -48,7 +48,7 @@ export const signIn = async (email: string, password: string) => {
       password,
     });
     return { data, error };
-  } catch (networkError) {
+  } catch {
     return { data: null, error: { message: 'Network error: Unable to connect to Supabase' } };
   }
 };
@@ -60,7 +60,7 @@ export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     return { error };
-  } catch (networkError) {
+  } catch {
     return { error: { message: 'Network error: Unable to connect to Supabase' } };
   }
 };

@@ -179,6 +179,58 @@ export interface Database {
           user_id?: string
         }
       }
+      rsip_nodes: {
+        Row: {
+          id: string
+          user_id: string
+          parent_id: string | null
+          title: string
+          rule: string
+          sort_order: number
+          use_timer: boolean
+          timer_minutes: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          parent_id?: string | null
+          title: string
+          rule: string
+          sort_order?: number
+          use_timer?: boolean
+          timer_minutes?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          parent_id?: string | null
+          title?: string
+          rule?: string
+          sort_order?: number
+          use_timer?: boolean
+          timer_minutes?: number | null
+          created_at?: string
+        }
+      }
+      rsip_meta: {
+        Row: {
+          user_id: string
+          last_added_at: string | null
+          allow_multiple_per_day: boolean
+        }
+        Insert: {
+          user_id: string
+          last_added_at?: string | null
+          allow_multiple_per_day?: boolean
+        }
+        Update: {
+          user_id?: string
+          last_added_at?: string | null
+          allow_multiple_per_day?: boolean
+        }
+      }
     }
     Views: {
       [_ in never]: never

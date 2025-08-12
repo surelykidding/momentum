@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChainTreeNode, ScheduledSession } from '../types';
-import { Play, Clock, Users } from 'lucide-react';
-import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
+import { Play, Users } from 'lucide-react';
+import { getTimeRemaining, formatDuration } from '../utils/time';
 import { getGroupProgress, getChainTypeConfig, getNextUnitInGroup } from '../utils/chainTree';
 import { notificationManager } from '../utils/notifications';
 
@@ -70,7 +70,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration, nextUnit?.auxiliaryDuration]);
+  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration, nextUnit]);
 
   // 重置警告状态当预约会话改变时
   React.useEffect(() => {
@@ -252,7 +252,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                 </p>
               </div>
               <div className="space-y-2 max-h-32 overflow-y-auto">
-                {group.children.map((child, index) => (
+                {group.children.map((child) => (
                   <div key={child.id} className="text-red-600 dark:text-red-400 text-sm flex items-center space-x-2">
                     <i className="fas fa-minus text-xs"></i>
                     <span className="font-chinese">{child.name}</span>

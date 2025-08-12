@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppState, Chain, ScheduledSession, ActiveSession, CompletionHistory } from './types';
 import { Dashboard } from './components/Dashboard';
+import { RSIPView } from './components/RSIPView';
 import { AuthWrapper } from './components/AuthWrapper';
 import { ChainEditor } from './components/ChainEditor';
 import { FocusMode } from './components/FocusMode';
@@ -9,7 +10,7 @@ import { GroupView } from './components/GroupView';
 import { AuxiliaryJudgment } from './components/AuxiliaryJudgment';
 import { storage as localStorageUtils } from './utils/storage';
 import { supabaseStorage } from './utils/supabaseStorage';
-import { getCurrentUser, isSupabaseConfigured } from './lib/supabase';
+import { isSupabaseConfigured } from './lib/supabase';
 import { isSessionExpired } from './utils/time';
 import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './utils/chainTree';
 import { notificationManager } from './utils/notifications';
@@ -24,6 +25,8 @@ function App() {
     editingChain: null,
     viewingChainId: null,
     completionHistory: [],
+    rsipNodes: [],
+    rsipMeta: {},
   });
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
@@ -86,7 +89,7 @@ function App() {
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
                 chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentFailure={() => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment!)}
                 onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
                 onCancel={() => setShowAuxiliaryJudgment(null)}
               />
@@ -94,7 +97,7 @@ function App() {
           </>
         );
 
-      case 'focus':
+      case 'focus': {
         const activeChain = state.chains.find(c => c.id === state.activeSession?.chainId);
         if (!state.activeSession || !activeChain) {
           handleBackToDashboard();
@@ -114,15 +117,16 @@ function App() {
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
                 chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentFailure={() => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment!)}
                 onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
                 onCancel={() => setShowAuxiliaryJudgment(null)}
               />
             )}
           </>
         );
+      }
 
-      case 'detail':
+      case 'detail': {
         const viewingChain = state.chains.find(c => c.id === state.viewingChainId);
         if (!viewingChain) {
           handleBackToDashboard();
@@ -140,15 +144,16 @@ function App() {
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
                 chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentFailure={() => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment!)}
                 onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
                 onCancel={() => setShowAuxiliaryJudgment(null)}
               />
             )}
           </>
         );
+      }
 
-      case 'group':
+      case 'group': {
         const viewingGroup = state.chains.find(c => c.id === state.viewingChainId);
         if (!viewingGroup) {
           handleBackToDashboard();
@@ -180,12 +185,30 @@ function App() {
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
                 chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentFailure={() => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment!)}
                 onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
                 onCancel={() => setShowAuxiliaryJudgment(null)}
               />
             )}
           </>
+        );
+      }
+
+      case 'rsip':
+        return (
+          <RSIPView
+            nodes={state.rsipNodes}
+            meta={state.rsipMeta}
+            onBack={handleBackToDashboard}
+            onSaveNodes={async (nodes) => {
+              await storage.saveRSIPNodes(nodes);
+              setState(prev => ({ ...prev, rsipNodes: nodes }));
+            }}
+            onSaveMeta={async (meta) => {
+              await storage.saveRSIPMeta(meta);
+              setState(prev => ({ ...prev, rsipMeta: meta }));
+            }}
+          />
         );
 
       default:
@@ -196,6 +219,7 @@ function App() {
               scheduledSessions={state.scheduledSessions}
               isLoading={isLoadingData}
               onCreateChain={handleCreateChain}
+              onOpenRSIP={() => setState(prev => ({ ...prev, currentView: 'rsip' }))}
               onStartChain={handleStartChain}
               onScheduleChain={handleScheduleChain}
               onViewChainDetail={handleViewChainDetail}
@@ -207,7 +231,7 @@ function App() {
             {showAuxiliaryJudgment && (
               <AuxiliaryJudgment
                 chain={state.chains.find(c => c.id === showAuxiliaryJudgment)!}
-                onJudgmentFailure={(reason) => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment, reason)}
+                onJudgmentFailure={() => handleAuxiliaryJudgmentFailure(showAuxiliaryJudgment!)}
                 onJudgmentAllow={(exceptionRule) => handleAuxiliaryJudgmentAllow(showAuxiliaryJudgment, exceptionRule)}
                 onCancel={() => setShowAuxiliaryJudgment(null)}
               />
@@ -261,6 +285,8 @@ function App() {
         );
         const activeSession = await storage.getActiveSession();
         const completionHistory = await storage.getCompletionHistory();
+        const rsipNodes = await storage.getRSIPNodes();
+        const rsipMeta = await storage.getRSIPMeta();
 
         console.log('设置应用状态，链数量:', chains.length);
         setState(prev => ({
@@ -269,6 +295,8 @@ function App() {
           scheduledSessions,
           activeSession,
           completionHistory,
+          rsipNodes,
+          rsipMeta,
           currentView: activeSession ? 'focus' : 'dashboard',
         }));
 
@@ -356,7 +384,7 @@ function App() {
     return () => clearInterval(interval);
   }, [storage, isInitialized]);
 
-  const handleCreateChain = (parentId?: string) => {
+  const handleCreateChain = () => {
     setState(prev => ({
       ...prev,
       currentView: 'editor',
@@ -705,7 +733,7 @@ function App() {
     });
   };
 
-  const handleAuxiliaryJudgmentFailure = (chainId: string, reason: string) => {
+  const handleAuxiliaryJudgmentFailure = (chainId: string) => {
     setState(prev => {
       // Remove the scheduled session
       const updatedScheduledSessions = prev.scheduledSessions.filter(

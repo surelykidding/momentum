@@ -6,9 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { getNextUnitInGroup } from '../utils/chainTree';
-import { getChainTypeConfig } from '../utils/chainTree';
-import { Plus, Download } from 'lucide-react';
-import { notificationManager } from '../utils/notifications';
+import { Download, TreePine } from 'lucide-react';
 import { NotificationToggle } from './NotificationToggle';
 
 interface DashboardProps {
@@ -16,6 +14,7 @@ interface DashboardProps {
   scheduledSessions: ScheduledSession[];
   isLoading?: boolean;
   onCreateChain: () => void;
+  onOpenRSIP?: () => void;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
   onViewChainDetail: (chainId: string) => void;
@@ -37,6 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onDeleteChain,
   onImportChains,
   history,
+  onOpenRSIP,
 }) => {
   const [showImportExport, setShowImportExport] = React.useState(false);
   
@@ -148,6 +148,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <Download size={16} />
                   <span className="font-chinese font-medium">数据管理</span>
+                </button>
+                <button
+                  onClick={onOpenRSIP}
+                  className="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+                  title="国策树（RSIP）"
+                >
+                  <TreePine size={16} />
+                  <span className="font-chinese font-medium">国策树</span>
                 </button>
                 <button
                   onClick={onCreateChain}
