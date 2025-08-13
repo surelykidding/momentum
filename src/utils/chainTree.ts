@@ -1,22 +1,80 @@
 import { Chain, ChainTreeNode } from '../types';
 
 /**
+ * 验证链数据的完整性
+ */
+const validateChainData = (chains: Chain[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  
+  for (const chain of chains) {
+    // Check for required fields
+    if (!chain.id) {
+      errors.push(`链条缺少ID: ${JSON.stringify(chain)}`);
+      continue;
+    }
+    
+    if (!chain.name) {
+      errors.push(`链条 ${chain.id} 缺少名称`);
+    }
+    
+    // Check for duplicate IDs
+    if (ids.has(chain.id)) {
+      errors.push(`重复的链条ID: ${chain.id}`);
+    }
+    ids.add(chain.id);
+    
+    // Check for invalid parent references (will be handled in tree building)
+    if (chain.parentId === chain.id) {
+      errors.push(`链条 ${chain.id} (${chain.name}) 存在循环引用`);
+    }
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
+
+/**
  * 将扁平的链数组转换为树状结构
  */
 export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
-  // 创建ID到节点的映射
-  const nodeMap = new Map<string, ChainTreeNode>();
-  
-  console.log('buildChainTree - 输入的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, parentId: c.parentId, type: c.type })));
-  
-  // 修复循环引用：将自引用的链条的 parentId 设置为 undefined
-  const cleanedChains = chains.map(chain => {
-    if (chain.parentId === chain.id) {
-      console.warn(`修复循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为根节点`);
-      return { ...chain, parentId: undefined };
+  try {
+    // Validate input data
+    if (!Array.isArray(chains)) {
+      console.error('buildChainTree: 输入不是数组');
+      return [];
     }
-    return chain;
-  });
+    
+    if (chains.length === 0) {
+      console.log('buildChainTree: 输入为空数组');
+      return [];
+    }
+    
+    // Validate chain data integrity
+    const validation = validateChainData(chains);
+    if (!validation.isValid) {
+      console.warn('buildChainTree: 数据完整性检查发现问题:', validation.errors);
+      // Continue processing but log warnings
+    }
+    
+    // 创建ID到节点的映射
+    const nodeMap = new Map<string, ChainTreeNode>();
+    
+    console.log('buildChainTree - 输入的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, parentId: c.parentId, type: c.type })));
+    
+    // 修复循环引用和其他数据问题
+    const cleanedChains = chains.map(chain => {
+      if (!chain.id) {
+        console.error(`跳过无效链条（缺少ID）:`, chain);
+        return null;
+      }
+      
+      if (chain.parentId === chain.id) {
+        console.warn(`修复循环引用: 链条 ${chain.name} (${chain.id}) 的父节点是自己，重置为根节点`);
+        return { ...chain, parentId: undefined };
+      }
+      
+      return chain;
+    }).filter((chain): chain is Chain => chain !== null);
 
   // 初始化所有节点
   cleanedChains.forEach(chain => {
@@ -41,8 +99,10 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
         console.log(`节点 ${chain.name} 作为 ${parent.name} 的子节点`);
       } else {
         // 父节点不存在，作为根节点处理
-        console.warn(`父节点 ${chain.parentId} 不存在，节点 ${chain.name} (${chain.id}) 将不会被添加到树中`);
-        // Do not push to rootNodes
+        console.warn(`父节点 ${chain.parentId} 不存在，节点 ${chain.name} (${chain.id}) 将作为根节点处理`);
+        // Reset parentId to undefined and add to rootNodes
+        node.parentId = undefined;
+        rootNodes.push(node);
       }
     } else {
       console.log(`节点 ${chain.name} 是根节点`);
@@ -62,7 +122,30 @@ export const buildChainTree = (chains: Chain[]): ChainTreeNode[] => {
   rootNodes.sort((a, b) => a.sortOrder - b.sortOrder);
 
   console.log('buildChainTree - 构建的根节点:', rootNodes.length, rootNodes.map(r => ({ id: r.id, name: r.name, childrenCount: r.children.length })));
+  
+  // Final validation - ensure all input chains are represented in the tree
+  const treeNodeIds = new Set<string>();
+  const collectIds = (nodes: ChainTreeNode[]) => {
+    nodes.forEach(node => {
+      treeNodeIds.add(node.id);
+      collectIds(node.children);
+    });
+  };
+  collectIds(rootNodes);
+  
+  const inputIds = new Set(cleanedChains.map(c => c.id));
+  const missingIds = [...inputIds].filter(id => !treeNodeIds.has(id));
+  
+  if (missingIds.length > 0) {
+    console.error('buildChainTree: 以下链条在树中丢失:', missingIds);
+  }
+  
   return rootNodes;
+  } catch (error) {
+    console.error('buildChainTree: 构建树时发生错误:', error);
+    // Return empty array to prevent app crash
+    return [];
+  }
 };
 
 /**
@@ -90,12 +173,14 @@ export const getGroupProgress = (group: ChainTreeNode): { completed: number; tot
  */
 export const getNextUnitInGroup = (group: ChainTreeNode): ChainTreeNode | null => {
   if (group.type === 'unit') {
-    return group;
+    // Return this unit if it hasn't been completed yet
+    return group.currentStreak === 0 ? group : null;
   }
 
+  // For groups, find the first incomplete unit in order
   for (const child of group.children) {
     const nextUnit = getNextUnitInGroup(child);
-    if (nextUnit && nextUnit.currentStreak === 0) {
+    if (nextUnit) {
       return nextUnit;
     }
   }

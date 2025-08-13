@@ -569,11 +569,19 @@ function App() {
       if (groupNode) {
         const nextUnit = getNextUnitInGroup(groupNode);
         if (nextUnit) {
+          console.log(`任务群 ${chain.name} 开始下一个任务: ${nextUnit.name}`);
           handleStartChain(nextUnit.id);
           return;
+        } else {
+          // No next unit available - all tasks completed or no tasks in group
+          console.log(`任务群 ${chain.name} 没有可用的下一个任务`);
+          notificationManager.notifyTaskCompleted(chain.name, 0, '所有任务已完成');
+          return;
         }
+      } else {
+        console.error(`无法找到任务群节点: ${chainId}`);
+        return;
       }
-      return;
     }
 
     const activeSession: ActiveSession = {

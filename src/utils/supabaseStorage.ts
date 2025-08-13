@@ -1,20 +1,155 @@
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { Chain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
+import { logger, measurePerformance } from './logger';
+
+interface SchemaVerificationResult {
+  hasAllColumns: boolean;
+  missingColumns: string[];
+  error?: string;
+}
 
 export class SupabaseStorage {
+  private schemaCache: Map<string, SchemaVerificationResult> = new Map();
+  private lastSchemaCheck: Date | null = null;
+  
+  /**
+   * Retry a database operation with exponential backoff
+   */
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    let lastError: Error;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        // Don't retry for certain types of errors
+        if (error && typeof error === 'object' && 'code' in error) {
+          const errorCode = (error as any).code;
+          if (['PGRST204', 'PGRST116', '42703', '42P01'].includes(errorCode)) {
+            throw lastError;
+          }
+        }
+        
+        if (attempt === maxRetries) {
+          console.error(`操作在 ${maxRetries} 次重试后仍失败:`, lastError.message);
+          throw lastError;
+        }
+        
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.warn(`操作失败，${delay}ms 后重试 (尝试 ${attempt + 1}/${maxRetries}):`, lastError.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError!;
+  }
+  
+  /**
+   * Verify that required columns exist in the database schema
+   */
+  async verifySchemaColumns(tableName: string, requiredColumns: string[]): Promise<SchemaVerificationResult> {
+    const cacheKey = `${tableName}:${requiredColumns.join(',')}`;
+    const now = new Date();
+    
+    // Use cached result if it's less than 5 minutes old
+    if (this.lastSchemaCheck && (now.getTime() - this.lastSchemaCheck.getTime()) < 300000) {
+      const cached = this.schemaCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+    
+    try {
+      // Query information_schema to check column existence
+      const { data, error } = await supabase
+        .from('information_schema.columns')
+        .select('column_name')
+        .eq('table_name', tableName)
+        .in('column_name', requiredColumns);
+        
+      if (error) {
+        console.warn('Schema verification failed:', error);
+        return { hasAllColumns: false, missingColumns: requiredColumns, error: error.message };
+      }
+      
+      const existingColumns = (data || []).map(row => row.column_name);
+      const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
+      
+      const result: SchemaVerificationResult = {
+        hasAllColumns: missingColumns.length === 0,
+        missingColumns,
+      };
+      
+      // Cache the result
+      this.schemaCache.set(cacheKey, result);
+      this.lastSchemaCheck = now;
+      
+      return result;
+    } catch (error) {
+      console.warn('Schema verification error:', error);
+      return { 
+        hasAllColumns: false, 
+        missingColumns: requiredColumns, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
   // Chains
   async getChains(): Promise<Chain[]> {
     const user = await getCurrentUser();
-    if (!user) return [];
+    if (!user) {
+      console.warn('getChains: 用户未认证');
+      return [];
+    }
 
-    const { data, error } = await supabase
-      .from('chains')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('chains')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching chains:', error);
+      if (error) {
+        console.error('获取链数据失败:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          userId: user.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Return empty array for non-critical errors
+        if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.warn('表不存在或权限问题，返回空数组');
+          return [];
+        }
+        
+        throw new Error(`获取链数据失败: ${error.message}`);
+      }
+
+      const chainCount = data?.length || 0;
+      logger.dbOperation('getChains', true, { chainCount, userId: user.id });
+      return data.map(chain => ({
+    } catch (error) {
+      console.error('getChains 操作异常:', {
+        error: error instanceof Error ? error.message : error,
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      // For network or other critical errors, throw to let caller handle
+      if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
+        throw error;
+      }
+      
       return [];
     }
 
@@ -64,6 +199,14 @@ export class SupabaseStorage {
       parentId: c.parentId,
       sortOrder: c.sortOrder 
     })));
+
+    // Verify schema before attempting to save
+    const newColumns = ['is_durationless', 'time_limit_hours', 'time_limit_exceptions', 'group_started_at', 'group_expires_at'];
+    const schemaCheck = await this.verifySchemaColumns('chains', newColumns);
+    
+    if (!schemaCheck.hasAllColumns) {
+      console.warn('数据库架构检查发现缺失列:', schemaCheck.missingColumns);
+    }
 
     // 生成两套数据：完整字段集（包含新列）与基础字段集（兼容旧后端）
     const buildRow = (chain: Chain, includeNewColumns: boolean) => {
@@ -116,7 +259,24 @@ export class SupabaseStorage {
     const isMissingColumnError = (e: any) => {
       if (!e) return false;
       const msg = `${e.message || ''} ${e.details || ''}`.toLowerCase();
-      return /column .* does not exist|schema cache|could not find .* column/.test(msg);
+      const code = e.code || '';
+      
+      // Enhanced error detection patterns
+      const patterns = [
+        /column .* does not exist/,
+        /schema cache/,
+        /could not find .* column/,
+        /relation .* does not exist/,
+        /unknown column/,
+        /invalid column name/,
+        /column .* not found/,
+        /undefined column/
+      ];
+      
+      // Check for specific error codes
+      const errorCodes = ['PGRST204', 'PGRST116', '42703', '42P01'];
+      
+      return patterns.some(pattern => pattern.test(msg)) || errorCodes.includes(code);
     };
 
     // 查询现有ID，用于决定删除哪些已被移除的链
@@ -142,18 +302,52 @@ export class SupabaseStorage {
 
     let { data: upsertData1, error: upsertErr1 } = await tryUpsert(rowsWithNew);
     if (upsertErr1 && isMissingColumnError(upsertErr1)) {
-      console.warn('检测到后端缺少新列，回退到基础字段保存。错误信息:', upsertErr1);
-      const { data: upsertData2, error: upsertErr2 } = await tryUpsert(rowsBase);
-      if (upsertErr2) {
-        console.error('回退保存仍失败:', upsertErr2);
-        throw new Error(`保存数据失败: ${upsertErr2.message}`);
+      console.warn('检测到后端缺少新列，回退到基础字段保存。错误信息:', {
+        code: upsertErr1.code,
+        message: upsertErr1.message,
+        details: upsertErr1.details,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Implement retry with exponential backoff for fallback
+      let retryCount = 0;
+      const maxRetries = 3;
+      let fallbackSuccess = false;
+      
+      while (retryCount < maxRetries && !fallbackSuccess) {
+        try {
+          const { data: upsertData2, error: upsertErr2 } = await tryUpsert(rowsBase);
+          if (upsertErr2) {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+              console.error('回退保存在重试后仍失败:', upsertErr2);
+              throw new Error(`保存数据失败 (重试 ${maxRetries} 次后): ${upsertErr2.message}`);
+            }
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          } else {
+            upsertResultIds = (upsertData2 || []).map(r => r.id);
+            fallbackSuccess = true;
+            console.log('回退保存成功，使用基础字段集');
+          }
+        } catch (retryError) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw retryError;
+          }
+        }
       }
-      upsertResultIds = (upsertData2 || []).map(r => r.id);
     } else if (upsertErr1) {
-      console.error('保存失败:', upsertErr1);
+      console.error('保存失败:', {
+        code: upsertErr1.code,
+        message: upsertErr1.message,
+        details: upsertErr1.details,
+        timestamp: new Date().toISOString()
+      });
       throw new Error(`保存数据失败: ${upsertErr1.message}`);
     } else {
       upsertResultIds = (upsertData1 || []).map(r => r.id);
+      console.log('保存成功，使用完整字段集');
     }
 
     // 仅删除那些不在本次保存集合中的旧链，避免“先删后插”带来的数据丢失
