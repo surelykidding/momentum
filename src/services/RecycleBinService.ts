@@ -7,7 +7,7 @@ export class RecycleBinService {
    */
   static async getDeletedChains(): Promise<DeletedChain[]> {
     try {
-      const deletedChains = storage.getDeletedChains();
+      const deletedChains = await storage.getDeletedChains();
       console.log(`[RecycleBin] 获取到 ${deletedChains.length} 条已删除的链条`);
       return deletedChains;
     } catch (error) {
@@ -22,7 +22,7 @@ export class RecycleBinService {
   static async moveToRecycleBin(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 将链条 ${chainId} 移动到回收箱`);
-      storage.softDeleteChain(chainId);
+      await storage.softDeleteChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已成功移动到回收箱`);
     } catch (error) {
       console.error(`[RecycleBin] 移动链条 ${chainId} 到回收箱失败:`, error);
@@ -36,7 +36,7 @@ export class RecycleBinService {
   static async restoreChain(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 恢复链条 ${chainId}`);
-      storage.restoreChain(chainId);
+      await storage.restoreChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已成功恢复`);
     } catch (error) {
       console.error(`[RecycleBin] 恢复链条 ${chainId} 失败:`, error);
@@ -50,7 +50,7 @@ export class RecycleBinService {
   static async permanentlyDelete(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 永久删除链条 ${chainId}`);
-      storage.permanentlyDeleteChain(chainId);
+      await storage.permanentlyDeleteChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已永久删除`);
     } catch (error) {
       console.error(`[RecycleBin] 永久删除链条 ${chainId} 失败:`, error);
@@ -66,7 +66,7 @@ export class RecycleBinService {
       console.log(`[RecycleBin] 批量恢复 ${chainIds.length} 条链条:`, chainIds);
       
       for (const chainId of chainIds) {
-        storage.restoreChain(chainId);
+        await storage.restoreChain(chainId);
       }
       
       console.log(`[RecycleBin] 成功批量恢复 ${chainIds.length} 条链条`);
@@ -84,7 +84,7 @@ export class RecycleBinService {
       console.log(`[RecycleBin] 批量永久删除 ${chainIds.length} 条链条:`, chainIds);
       
       for (const chainId of chainIds) {
-        storage.permanentlyDeleteChain(chainId);
+        await storage.permanentlyDeleteChain(chainId);
       }
       
       console.log(`[RecycleBin] 成功批量永久删除 ${chainIds.length} 条链条`);
