@@ -203,8 +203,21 @@ export class SupabaseStorage {
   async getDeletedChains(): Promise<DeletedChain[]> {
     try {
       const allChains = await this.getChains();
-      return allChains
-        .filter(chain => chain.deletedAt != null)
+      console.log('[DEBUG] getDeletedChains - 所有链条:', allChains.length, allChains.map(c => ({ 
+        id: c.id, 
+        name: c.name, 
+        deletedAt: c.deletedAt,
+        deletedAtType: typeof c.deletedAt
+      })));
+      
+      const deletedChains = allChains.filter(chain => chain.deletedAt != null);
+      console.log('[DEBUG] getDeletedChains - 已删除链条:', deletedChains.length, deletedChains.map(c => ({ 
+        id: c.id, 
+        name: c.name, 
+        deletedAt: c.deletedAt 
+      })));
+      
+      return deletedChains
         .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
         .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
     } catch (error) {

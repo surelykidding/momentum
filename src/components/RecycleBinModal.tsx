@@ -161,9 +161,9 @@ export const RecycleBinModal: React.FC<RecycleBinModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-7xl max-h-[95vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-600">
+        <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-slate-600">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
               <Trash2 size={20} className="text-gray-600 dark:text-slate-300" />
@@ -214,7 +214,7 @@ export const RecycleBinModal: React.FC<RecycleBinModalProps> = ({
             <>
               {/* Bulk Actions Bar */}
               {deletedChains.length > 0 && (
-                <div className="p-4 border-b border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50">
+                <div className="p-6 border-b border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <button
@@ -260,8 +260,8 @@ export const RecycleBinModal: React.FC<RecycleBinModalProps> = ({
               )}
 
               {/* Chains List */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="flex-1 overflow-y-auto p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                   {deletedChains.map(chain => (
                     <DeletedChainCard
                       key={chain.id}
