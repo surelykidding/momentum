@@ -148,7 +148,7 @@ export class SupabaseStorage {
       const chainCount = data?.length || 0;
       logger.dbOperation('getChains', true, { chainCount, userId: user.id });
       
-      return data.map(chain => ({
+      const mappedChains = data.map(chain => ({
       id: chain.id,
       name: chain.name,
       parentId: chain.parent_id || undefined,
@@ -177,6 +177,23 @@ export class SupabaseStorage {
       createdAt: new Date(chain.created_at || Date.now()),
       lastCompletedAt: chain.last_completed_at ? new Date(chain.last_completed_at) : undefined,
     }));
+    
+    // 添加调试日志来检查 deleted_at 字段的映射
+    console.log('[DEBUG] getChains - 原始数据样本:', data.slice(0, 3).map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      deleted_at: (c as any).deleted_at,
+      deleted_at_type: typeof (c as any).deleted_at
+    })));
+    
+    console.log('[DEBUG] getChains - 映射后数据样本:', mappedChains.slice(0, 3).map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      deletedAt: c.deletedAt,
+      deletedAtType: typeof c.deletedAt
+    })));
+    
+    return mappedChains;
     } catch (error) {
       console.error('getChains 操作异常:', {
         error: error instanceof Error ? error.message : error,
