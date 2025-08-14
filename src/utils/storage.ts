@@ -1,4 +1,4 @@
-import { Chain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
+import { Chain, DeletedChain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
 
 const STORAGE_KEYS = {
   CHAINS: 'momentum_chains',
@@ -18,6 +18,7 @@ export const storage = {
       auxiliaryStreak: chain.auxiliaryStreak || 0,
       auxiliaryFailures: chain.auxiliaryFailures || 0,
       auxiliaryExceptions: chain.auxiliaryExceptions || [],
+      deletedAt: chain.deletedAt ? new Date(chain.deletedAt) : null,
       createdAt: new Date(chain.createdAt),
       lastCompletedAt: chain.lastCompletedAt ? new Date(chain.lastCompletedAt) : undefined,
     }));
@@ -108,4 +109,74 @@ export const storage = {
       })
     );
   },
+
+  // 回收箱相关方法
+  getActiveChains: (): Chain[] => {
+    return storage.getChains().filter(chain => !chain.deletedAt);
+  },
+
+  getDeletedChains: (): DeletedChain[] => {
+    return storage.getChains()
+      .filter(chain => chain.deletedAt)
+      .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
+      .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+  },
+
+  softDeleteChain: (chainId: string): void => {
+    const chains = storage.getChains();
+    const updatedChains = chains.map(chain => {
+      if (chain.id === chainId || isChildOf(chain, chainId, chains)) {
+        return { ...chain, deletedAt: new Date() };
+      }
+      return chain;
+    });
+    storage.saveChains(updatedChains);
+  },
+
+  restoreChain: (chainId: string): void => {
+    const chains = storage.getChains();
+    const updatedChains = chains.map(chain => {
+      if (chain.id === chainId || isChildOf(chain, chainId, chains)) {
+        return { ...chain, deletedAt: null };
+      }
+      return chain;
+    });
+    storage.saveChains(updatedChains);
+  },
+
+  permanentlyDeleteChain: (chainId: string): void => {
+    const chains = storage.getChains();
+    const updatedChains = chains.filter(chain => 
+      chain.id !== chainId && !isChildOf(chain, chainId, chains)
+    );
+    storage.saveChains(updatedChains);
+  },
+
+  cleanupExpiredDeletedChains: (olderThanDays: number = 30): number => {
+    const chains = storage.getChains();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    
+    const chainsToDelete = chains.filter(chain => 
+      chain.deletedAt && chain.deletedAt < cutoffDate
+    );
+    
+    const remainingChains = chains.filter(chain => 
+      !chain.deletedAt || chain.deletedAt >= cutoffDate
+    );
+    
+    storage.saveChains(remainingChains);
+    return chainsToDelete.length;
+  },
 };
+
+// 辅助函数：检查链条是否是指定链条的子链条
+function isChildOf(chain: Chain, parentId: string, allChains: Chain[]): boolean {
+  if (!chain.parentId) return false;
+  if (chain.parentId === parentId) return true;
+  
+  const parent = allChains.find(c => c.id === chain.parentId);
+  if (!parent) return false;
+  
+  return isChildOf(parent, parentId, allChains);
+}

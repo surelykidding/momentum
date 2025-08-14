@@ -226,6 +226,8 @@ function App() {
               onCancelScheduledSession={handleCancelScheduledSession}
               onDeleteChain={handleDeleteChain}
               onImportChains={handleImportChains}
+              onRestoreChains={handleRestoreChains}
+              onPermanentDeleteChains={handlePermanentDeleteChains}
               history={state.completionHistory}
             />
             {showAuxiliaryJudgment && (
@@ -247,7 +249,16 @@ function App() {
       console.log('开始加载数据，使用存储类型:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
       setIsLoadingData(true);
       try {
-        const chains = await storage.getChains();
+        // 在加载数据前先执行自动清理
+        try {
+          const cleanedCount = await storage.cleanupExpiredDeletedChains(30);
+          if (cleanedCount > 0) {
+            console.log(`自动清理了 ${cleanedCount} 条过期的已删除链条`);
+          }
+        } catch (cleanupError) {
+          console.error('自动清理失败:', cleanupError);
+        }
+        const chains = await storage.getActiveChains();
         
         // 检查并修复循环引用的数据
         const hasCircularReferences = chains.some(chain => chain.parentId === chain.id);
@@ -848,44 +859,85 @@ function App() {
     }));
   };
 
-  const handleDeleteChain = (chainId: string) => {
-    setState(prev => {
-      // Remove the chain
-      const updatedChains = prev.chains.filter(chain => chain.id !== chainId);
+  const handleDeleteChain = async (chainId: string) => {
+    try {
+      // Use soft deletion instead of permanent deletion
+      await storage.softDeleteChain(chainId);
       
-      // Remove any scheduled sessions for this chain
-      const updatedScheduledSessions = prev.scheduledSessions.filter(
-        session => session.chainId !== chainId
-      );
+      // Reload chains to reflect the soft deletion
+      const updatedChains = await storage.getActiveChains();
       
-      // Remove completion history for this chain
-      const updatedHistory = prev.completionHistory.filter(
-        history => history.chainId !== chainId
-      );
+      setState(prev => {
+        // Remove any scheduled sessions for this chain
+        const updatedScheduledSessions = prev.scheduledSessions.filter(
+          session => session.chainId !== chainId
+        );
+        
+        // If currently active session belongs to this chain, clear it
+        const updatedActiveSession = prev.activeSession?.chainId === chainId 
+          ? null 
+          : prev.activeSession;
+        
+        // Save updated sessions to storage
+        storage.saveScheduledSessions(updatedScheduledSessions);
+        if (!updatedActiveSession) {
+          storage.saveActiveSession(null);
+        }
+        
+        return {
+          ...prev,
+          chains: updatedChains,
+          scheduledSessions: updatedScheduledSessions,
+          activeSession: updatedActiveSession,
+          currentView: updatedActiveSession ? prev.currentView : 'dashboard',
+          viewingChainId: prev.viewingChainId === chainId ? null : prev.viewingChainId,
+        };
+      });
       
-      // If currently active session belongs to this chain, clear it
-      const updatedActiveSession = prev.activeSession?.chainId === chainId 
-        ? null 
-        : prev.activeSession;
+      console.log(`链条 ${chainId} 已移动到回收箱`);
+    } catch (error) {
+      console.error('删除链条失败:', error);
+      alert('删除失败，请重试');
+    }
+  };
+
+  const handleRestoreChains = async (chainIds: string[]) => {
+    try {
+      console.log('恢复链条:', chainIds);
       
-      // Save to storage
-      storage.saveChains(updatedChains);
-      storage.saveScheduledSessions(updatedScheduledSessions);
-      storage.saveCompletionHistory(updatedHistory);
-      if (!updatedActiveSession) {
-        storage.saveActiveSession(null);
+      // 批量恢复链条
+      for (const chainId of chainIds) {
+        await storage.restoreChain(chainId);
       }
       
-      return {
+      // 重新加载活跃链条
+      const updatedChains = await storage.getActiveChains();
+      setState(prev => ({
         ...prev,
         chains: updatedChains,
-        scheduledSessions: updatedScheduledSessions,
-        completionHistory: updatedHistory,
-        activeSession: updatedActiveSession,
-        currentView: updatedActiveSession ? prev.currentView : 'dashboard',
-        viewingChainId: prev.viewingChainId === chainId ? null : prev.viewingChainId,
-      };
-    });
+      }));
+      
+      console.log(`成功恢复 ${chainIds.length} 条链条`);
+    } catch (error) {
+      console.error('恢复链条失败:', error);
+      alert('恢复失败，请重试');
+    }
+  };
+
+  const handlePermanentDeleteChains = async (chainIds: string[]) => {
+    try {
+      console.log('永久删除链条:', chainIds);
+      
+      // 批量永久删除链条
+      for (const chainId of chainIds) {
+        await storage.permanentlyDeleteChain(chainId);
+      }
+      
+      console.log(`成功永久删除 ${chainIds.length} 条链条`);
+    } catch (error) {
+      console.error('永久删除链条失败:', error);
+      alert('永久删除失败，请重试');
+    }
   };
 
   const handleImportChains = async (importedChains: Chain[], options?: { history?: CompletionHistory[] }) => {

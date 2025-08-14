@@ -6,8 +6,10 @@ import { ThemeToggle } from './ThemeToggle';
 import { ImportExportModal } from './ImportExportModal';
 import { buildChainTree, getTopLevelChains } from '../utils/chainTree';
 import { getNextUnitInGroup } from '../utils/chainTree';
-import { Download, TreePine } from 'lucide-react';
+import { Download, TreePine, Trash2 } from 'lucide-react';
 import { NotificationToggle } from './NotificationToggle';
+import { RecycleBinModal } from './RecycleBinModal';
+import { RecycleBinService } from '../services/RecycleBinService';
 
 interface DashboardProps {
   chains: Chain[];
@@ -21,6 +23,8 @@ interface DashboardProps {
   onCancelScheduledSession?: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
   onImportChains: (chains: Chain[], options?: { history?: CompletionHistory[] }) => void;
+  onRestoreChains?: (chainIds: string[]) => void;
+  onPermanentDeleteChains?: (chainIds: string[]) => void;
   history?: CompletionHistory[];
 }
 
@@ -35,10 +39,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCancelScheduledSession,
   onDeleteChain,
   onImportChains,
+  onRestoreChains,
+  onPermanentDeleteChains,
   history,
   onOpenRSIP,
 }) => {
   const [showImportExport, setShowImportExport] = React.useState(false);
+  const [showRecycleBin, setShowRecycleBin] = React.useState(false);
+  const [recycleBinCount, setRecycleBinCount] = React.useState(0);
   
   console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
   
@@ -48,6 +56,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   const topLevelChains = getTopLevelChains(chainTree);
   console.log('Dashboard - 顶层链条:', topLevelChains.length, topLevelChains.map(c => ({ id: c.id, name: c.name, type: c.type })));
+
+  // 加载回收箱统计信息
+  React.useEffect(() => {
+    const loadRecycleBinStats = async () => {
+      try {
+        const stats = await RecycleBinService.getRecycleBinStats();
+        setRecycleBinCount(stats.totalDeleted);
+      } catch (error) {
+        console.error('加载回收箱统计信息失败:', error);
+      }
+    };
+
+    loadRecycleBinStats();
+  }, [chains]); // 当链条变化时重新加载统计信息
 
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
@@ -143,6 +165,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div className="flex items-center space-x-3">
                 <button
+                  onClick={() => setShowRecycleBin(true)}
+                  className="relative bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
+                  title="回收箱"
+                >
+                  <Trash2 size={16} />
+                  <span className="font-chinese font-medium">回收箱</span>
+                  {recycleBinCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {recycleBinCount > 99 ? '99+' : recycleBinCount}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={() => setShowImportExport(true)}
                   className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 shadow-lg"
                 >
@@ -211,6 +246,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
           history={history}
           onImport={(newChains, options) => onImportChains(newChains, options)}
           onClose={() => setShowImportExport(false)}
+        />
+      )}
+
+      {/* Recycle Bin Modal */}
+      {showRecycleBin && (
+        <RecycleBinModal
+          isOpen={showRecycleBin}
+          onClose={() => setShowRecycleBin(false)}
+          onRestore={async (chainIds) => {
+            if (onRestoreChains) {
+              await onRestoreChains(chainIds);
+              // 重新加载回收箱统计信息
+              const stats = await RecycleBinService.getRecycleBinStats();
+              setRecycleBinCount(stats.totalDeleted);
+            }
+          }}
+          onPermanentDelete={async (chainIds) => {
+            if (onPermanentDeleteChains) {
+              await onPermanentDeleteChains(chainIds);
+              // 重新加载回收箱统计信息
+              const stats = await RecycleBinService.getRecycleBinStats();
+              setRecycleBinCount(stats.totalDeleted);
+            }
+          }}
         />
       )}
     </div>

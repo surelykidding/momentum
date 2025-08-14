@@ -25,6 +25,8 @@ export interface Chain {
   groupExpiresAt?: Date; // 任务群过期时间
   // 无时长任务（手动结束）
   isDurationless?: boolean; // 为 true 时不倒计时，由用户手动结束
+  // 回收箱功能
+  deletedAt?: Date | null; // 软删除时间戳，null表示未删除
   createdAt: Date;
   lastCompletedAt?: Date;
 }
@@ -38,6 +40,11 @@ export type ChainType =
   | 'special_ops'   // 特勤单元（处理杂事）
   | 'engineering'   // 工程单元（运动锻炼）
   | 'quartermaster'; // 炊事单元（备餐做饭）
+
+// 已删除的链条接口
+export interface DeletedChain extends Chain {
+  deletedAt: Date; // 删除时间戳，对于已删除的链条这个字段是必需的
+}
 
 // 任务树节点，用于前端渲染层级结构
 export interface ChainTreeNode extends Chain {
