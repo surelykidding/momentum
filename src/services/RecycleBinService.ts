@@ -7,8 +7,9 @@ export class RecycleBinService {
    */
   static async getDeletedChains(): Promise<DeletedChain[]> {
     try {
+      console.log('[RecycleBin] 开始获取已删除链条...');
       const deletedChains = await storage.getDeletedChains();
-      console.log(`[RecycleBin] 获取到 ${deletedChains.length} 条已删除的链条`);
+      console.log(`[RecycleBin] 获取到 ${deletedChains.length} 条已删除的链条`, deletedChains.map(c => ({ id: c.id, name: c.name, deletedAt: c.deletedAt })));
       return deletedChains;
     } catch (error) {
       console.error('[RecycleBin] 获取已删除链条失败:', error);
