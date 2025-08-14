@@ -119,6 +119,8 @@ export class SupabaseStorage {
       return [];
     }
 
+    console.log('[DEBUG] getChains - 当前用户ID:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('chains')
@@ -213,8 +215,23 @@ export class SupabaseStorage {
   // 回收箱相关方法
   async getActiveChains(): Promise<Chain[]> {
     const allChains = await this.getChains();
+    console.log('[DEBUG] getActiveChains - 所有链条:', allChains.length, allChains.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      deletedAt: c.deletedAt,
+      deletedAtType: typeof c.deletedAt,
+      isDeleted: c.deletedAt != null
+    })));
+    
     // 过滤掉已删除的链条（deletedAt不为null且不为undefined）
-    return allChains.filter(chain => chain.deletedAt == null);
+    const activeChains = allChains.filter(chain => chain.deletedAt == null);
+    console.log('[DEBUG] getActiveChains - 活跃链条:', activeChains.length, activeChains.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      deletedAt: c.deletedAt 
+    })));
+    
+    return activeChains;
   }
 
   async getDeletedChains(): Promise<DeletedChain[]> {
