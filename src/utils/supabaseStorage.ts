@@ -181,18 +181,19 @@ export class SupabaseStorage {
     }));
     
     // 添加调试日志来检查 deleted_at 字段的映射
-    console.log('[DEBUG] getChains - 原始数据样本:', data.slice(0, 3).map(c => ({ 
+    console.log('[DEBUG] getChains - 原始数据样本:', data.slice(0, 7).map(c => ({ 
       id: c.id, 
       name: c.name, 
       deleted_at: (c as any).deleted_at,
       deleted_at_type: typeof (c as any).deleted_at
     })));
     
-    console.log('[DEBUG] getChains - 映射后数据样本:', mappedChains.slice(0, 3).map(c => ({ 
+    console.log('[DEBUG] getChains - 映射后数据样本:', mappedChains.slice(0, 7).map(c => ({ 
       id: c.id, 
       name: c.name, 
       deletedAt: c.deletedAt,
-      deletedAtType: typeof c.deletedAt
+      deletedAtType: typeof c.deletedAt,
+      isDeleted: c.deletedAt != null
     })));
     
     return mappedChains;
