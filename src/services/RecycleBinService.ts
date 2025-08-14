@@ -1,13 +1,23 @@
 import { Chain, DeletedChain } from '../types';
-import { storage } from '../utils/storage';
+import { storage as localStorageUtils } from '../utils/storage';
+import { supabaseStorage } from '../utils/supabaseStorage';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export class RecycleBinService {
+  /**
+   * 获取当前使用的存储实例
+   */
+  private static getStorage() {
+    return isSupabaseConfigured ? supabaseStorage : localStorageUtils;
+  }
+
   /**
    * 获取所有已删除的链条
    */
   static async getDeletedChains(): Promise<DeletedChain[]> {
     try {
       console.log('[RecycleBin] 开始获取已删除链条...');
+      const storage = this.getStorage();
       const deletedChains = await storage.getDeletedChains();
       console.log(`[RecycleBin] 获取到 ${deletedChains.length} 条已删除的链条`, deletedChains.map(c => ({ id: c.id, name: c.name, deletedAt: c.deletedAt })));
       return deletedChains;
@@ -23,6 +33,7 @@ export class RecycleBinService {
   static async moveToRecycleBin(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 将链条 ${chainId} 移动到回收箱`);
+      const storage = this.getStorage();
       await storage.softDeleteChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已成功移动到回收箱`);
     } catch (error) {
@@ -37,6 +48,7 @@ export class RecycleBinService {
   static async restoreChain(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 恢复链条 ${chainId}`);
+      const storage = this.getStorage();
       await storage.restoreChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已成功恢复`);
     } catch (error) {
@@ -51,6 +63,7 @@ export class RecycleBinService {
   static async permanentlyDelete(chainId: string): Promise<void> {
     try {
       console.log(`[RecycleBin] 永久删除链条 ${chainId}`);
+      const storage = this.getStorage();
       await storage.permanentlyDeleteChain(chainId);
       console.log(`[RecycleBin] 链条 ${chainId} 已永久删除`);
     } catch (error) {
@@ -65,6 +78,7 @@ export class RecycleBinService {
   static async bulkRestore(chainIds: string[]): Promise<void> {
     try {
       console.log(`[RecycleBin] 批量恢复 ${chainIds.length} 条链条:`, chainIds);
+      const storage = this.getStorage();
       
       for (const chainId of chainIds) {
         await storage.restoreChain(chainId);
@@ -83,6 +97,7 @@ export class RecycleBinService {
   static async bulkPermanentDelete(chainIds: string[]): Promise<void> {
     try {
       console.log(`[RecycleBin] 批量永久删除 ${chainIds.length} 条链条:`, chainIds);
+      const storage = this.getStorage();
       
       for (const chainId of chainIds) {
         await storage.permanentlyDeleteChain(chainId);
@@ -101,8 +116,9 @@ export class RecycleBinService {
   static async cleanupExpiredChains(olderThanDays: number = 30): Promise<number> {
     try {
       console.log(`[RecycleBin] 开始清理超过 ${olderThanDays} 天的已删除链条`);
+      const storage = this.getStorage();
       
-      const deletedCount = storage.cleanupExpiredDeletedChains(olderThanDays);
+      const deletedCount = await storage.cleanupExpiredDeletedChains(olderThanDays);
       
       console.log(`[RecycleBin] 清理完成，共删除 ${deletedCount} 条过期链条`);
       return deletedCount;
