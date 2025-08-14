@@ -51,16 +51,26 @@ export class SupabaseStorage {
   }
   
   /**
+   * Clear schema cache to force re-verification
+   */
+  clearSchemaCache(): void {
+    this.schemaCache.clear();
+    this.lastSchemaCheck = null;
+    console.log('Schema cache cleared - will re-verify database schema');
+  }
+
+  /**
    * Verify that required columns exist in the database schema
    */
   async verifySchemaColumns(tableName: string, requiredColumns: string[]): Promise<SchemaVerificationResult> {
     const cacheKey = `${tableName}:${requiredColumns.join(',')}`;
     const now = new Date();
     
-    // Use cached result if it's less than 5 minutes old
-    if (this.lastSchemaCheck && (now.getTime() - this.lastSchemaCheck.getTime()) < 300000) {
+    // Use cached result if it's less than 1 minute old (reduced from 5 minutes)
+    if (this.lastSchemaCheck && (now.getTime() - this.lastSchemaCheck.getTime()) < 60000) {
       const cached = this.schemaCache.get(cacheKey);
       if (cached) {
+        console.log('Using cached schema verification result');
         return cached;
       }
     }
@@ -855,3 +865,6 @@ export class SupabaseStorage {
 }
 
 export const supabaseStorage = new SupabaseStorage();
+
+// Clear schema cache on module load to ensure fresh schema verification
+supabaseStorage.clearSchemaCache();
