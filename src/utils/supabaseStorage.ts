@@ -191,11 +191,17 @@ export class SupabaseStorage {
   }
 
   async getDeletedChains(): Promise<DeletedChain[]> {
-    const allChains = await this.getChains();
-    return allChains
-      .filter(chain => chain.deletedAt != null)
-      .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
-      .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+    try {
+      const allChains = await this.getChains();
+      return allChains
+        .filter(chain => chain.deletedAt != null)
+        .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
+        .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+    } catch (error) {
+      // 如果获取链条失败，返回空数组
+      console.warn('获取已删除链条失败，可能是数据库不支持软删除:', error);
+      return [];
+    }
   }
 
   async softDeleteChain(chainId: string): Promise<void> {
@@ -208,16 +214,32 @@ export class SupabaseStorage {
     const allChains = await this.getChains();
     const chainsToDelete = this.findChainAndChildren(chainId, allChains);
     
-    // 批量软删除
-    const { error } = await supabase
-      .from('chains')
-      .update({ deleted_at: new Date().toISOString() })
-      .in('id', chainsToDelete.map(c => c.id))
-      .eq('user_id', user.id);
+    try {
+      // 尝试批量软删除
+      const { error } = await supabase
+        .from('chains')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', chainsToDelete.map(c => c.id))
+        .eq('user_id', user.id);
 
-    if (error) {
-      console.error('软删除链条失败:', error);
-      throw new Error(`软删除链条失败: ${error.message}`);
+      if (error) {
+        // 如果数据库不支持 deleted_at 字段，回退到永久删除
+        if (error.code === '42703' || error.message?.includes('deleted_at') || error.code === 'PGRST204') {
+          console.warn('数据库不支持软删除，执行永久删除');
+          await this.permanentlyDeleteChain(chainId);
+          return;
+        }
+        console.error('软删除链条失败:', error);
+        throw new Error(`软删除链条失败: ${error.message}`);
+      }
+    } catch (error) {
+      // 如果是字段不存在的错误，回退到永久删除
+      if (error instanceof Error && (error.message.includes('deleted_at') || error.message.includes('PGRST204'))) {
+        console.warn('数据库不支持软删除，执行永久删除');
+        await this.permanentlyDeleteChain(chainId);
+        return;
+      }
+      throw error;
     }
   }
 
@@ -227,20 +249,31 @@ export class SupabaseStorage {
       throw new Error('用户未认证，无法恢复链条');
     }
 
-    // 获取所有链条以找到子链条
-    const allChains = await this.getChains();
-    const chainsToRestore = this.findChainAndChildren(chainId, allChains);
-    
-    // 批量恢复
-    const { error } = await supabase
-      .from('chains')
-      .update({ deleted_at: null })
-      .in('id', chainsToRestore.map(c => c.id))
-      .eq('user_id', user.id);
+    try {
+      // 获取所有链条以找到子链条
+      const allChains = await this.getChains();
+      const chainsToRestore = this.findChainAndChildren(chainId, allChains);
+      
+      // 批量恢复
+      const { error } = await supabase
+        .from('chains')
+        .update({ deleted_at: null })
+        .in('id', chainsToRestore.map(c => c.id))
+        .eq('user_id', user.id);
 
-    if (error) {
-      console.error('恢复链条失败:', error);
-      throw new Error(`恢复链条失败: ${error.message}`);
+      if (error) {
+        // 如果数据库不支持 deleted_at 字段，说明链条已经被永久删除，无法恢复
+        if (error.code === '42703' || error.message?.includes('deleted_at') || error.code === 'PGRST204') {
+          throw new Error('数据库不支持软删除功能，无法恢复已删除的链条');
+        }
+        console.error('恢复链条失败:', error);
+        throw new Error(`恢复链条失败: ${error.message}`);
+      }
+    } catch (error) {
+      if (error instanceof Error && (error.message.includes('deleted_at') || error.message.includes('PGRST204'))) {
+        throw new Error('数据库不支持软删除功能，无法恢复已删除的链条');
+      }
+      throw error;
     }
   }
 
@@ -273,39 +306,53 @@ export class SupabaseStorage {
       return 0;
     }
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-    // 查找过期的已删除链条
-    const { data: expiredChains, error: selectError } = await supabase
-      .from('chains')
-      .select('id')
-      .eq('user_id', user.id)
-      .not('deleted_at', 'is', null)
-      .lt('deleted_at', cutoffDate.toISOString());
+      // 查找过期的已删除链条
+      const { data: expiredChains, error: selectError } = await supabase
+        .from('chains')
+        .select('id')
+        .eq('user_id', user.id)
+        .not('deleted_at', 'is', null)
+        .lt('deleted_at', cutoffDate.toISOString());
 
-    if (selectError) {
-      console.error('查找过期链条失败:', selectError);
-      throw new Error(`查找过期链条失败: ${selectError.message}`);
+      if (selectError) {
+        // 如果数据库没有 deleted_at 字段，直接返回0，不抛出错误
+        if (selectError.code === '42703' || selectError.message?.includes('deleted_at does not exist')) {
+          console.warn('数据库没有 deleted_at 字段，跳过自动清理');
+          return 0;
+        }
+        console.error('查找过期链条失败:', selectError);
+        throw new Error(`查找过期链条失败: ${selectError.message}`);
+      }
+
+      if (!expiredChains || expiredChains.length === 0) {
+        return 0;
+      }
+
+      // 永久删除过期链条
+      const { error: deleteError } = await supabase
+        .from('chains')
+        .delete()
+        .in('id', expiredChains.map(c => c.id))
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('清理过期链条失败:', deleteError);
+        throw new Error(`清理过期链条失败: ${deleteError.message}`);
+      }
+
+      return expiredChains.length;
+    } catch (error) {
+      // 如果是字段不存在的错误，不抛出异常，只是记录警告
+      if (error instanceof Error && error.message.includes('deleted_at does not exist')) {
+        console.warn('数据库架构不支持软删除，跳过自动清理');
+        return 0;
+      }
+      throw error;
     }
-
-    if (!expiredChains || expiredChains.length === 0) {
-      return 0;
-    }
-
-    // 永久删除过期链条
-    const { error: deleteError } = await supabase
-      .from('chains')
-      .delete()
-      .in('id', expiredChains.map(c => c.id))
-      .eq('user_id', user.id);
-
-    if (deleteError) {
-      console.error('清理过期链条失败:', deleteError);
-      throw new Error(`清理过期链条失败: ${deleteError.message}`);
-    }
-
-    return expiredChains.length;
   }
 
   // 辅助方法：查找链条及其所有子链条
@@ -382,7 +429,6 @@ export class SupabaseStorage {
         auxiliary_signal: chain.auxiliarySignal,
         auxiliary_duration: chain.auxiliaryDuration,
         auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
-        deleted_at: chain.deletedAt?.toISOString() || null,
         created_at: chain.createdAt.toISOString(),
         last_completed_at: chain.lastCompletedAt?.toISOString(),
         user_id: user.id,
@@ -398,6 +444,7 @@ export class SupabaseStorage {
         time_limit_exceptions: chain.timeLimitExceptions ?? [],
         group_started_at: chain.groupStartedAt ? chain.groupStartedAt.toISOString() : null,
         group_expires_at: chain.groupExpiresAt ? chain.groupExpiresAt.toISOString() : null,
+        deleted_at: chain.deletedAt?.toISOString() || null,
       } as any;
     };
 
