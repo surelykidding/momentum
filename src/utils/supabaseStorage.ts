@@ -1,5 +1,5 @@
 import { supabase, getCurrentUser } from '../lib/supabase';
-import { Chain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
+import { Chain, DeletedChain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
 import { logger, measurePerformance } from './logger';
 
 interface SchemaVerificationResult {
@@ -163,6 +163,7 @@ export class SupabaseStorage {
       timeLimitExceptions: Array.isArray((chain as any).time_limit_exceptions) ? (chain as any).time_limit_exceptions : [],
       groupStartedAt: (chain as any).group_started_at ? new Date((chain as any).group_started_at) : undefined,
       groupExpiresAt: (chain as any).group_expires_at ? new Date((chain as any).group_expires_at) : undefined,
+      deletedAt: (chain as any).deleted_at ? new Date((chain as any).deleted_at) : null,
       createdAt: new Date(chain.created_at || Date.now()),
       lastCompletedAt: chain.last_completed_at ? new Date(chain.last_completed_at) : undefined,
     }));
@@ -180,6 +181,153 @@ export class SupabaseStorage {
       
       return [];
     }
+  }
+
+  // 回收箱相关方法
+  async getActiveChains(): Promise<Chain[]> {
+    const allChains = await this.getChains();
+    // 过滤掉已删除的链条（deletedAt不为null且不为undefined）
+    return allChains.filter(chain => chain.deletedAt == null);
+  }
+
+  async getDeletedChains(): Promise<DeletedChain[]> {
+    const allChains = await this.getChains();
+    return allChains
+      .filter(chain => chain.deletedAt != null)
+      .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
+      .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+  }
+
+  async softDeleteChain(chainId: string): Promise<void> {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error('用户未认证，无法删除链条');
+    }
+
+    // 获取所有链条以找到子链条
+    const allChains = await this.getChains();
+    const chainsToDelete = this.findChainAndChildren(chainId, allChains);
+    
+    // 批量软删除
+    const { error } = await supabase
+      .from('chains')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', chainsToDelete.map(c => c.id))
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('软删除链条失败:', error);
+      throw new Error(`软删除链条失败: ${error.message}`);
+    }
+  }
+
+  async restoreChain(chainId: string): Promise<void> {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error('用户未认证，无法恢复链条');
+    }
+
+    // 获取所有链条以找到子链条
+    const allChains = await this.getChains();
+    const chainsToRestore = this.findChainAndChildren(chainId, allChains);
+    
+    // 批量恢复
+    const { error } = await supabase
+      .from('chains')
+      .update({ deleted_at: null })
+      .in('id', chainsToRestore.map(c => c.id))
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('恢复链条失败:', error);
+      throw new Error(`恢复链条失败: ${error.message}`);
+    }
+  }
+
+  async permanentlyDeleteChain(chainId: string): Promise<void> {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error('用户未认证，无法删除链条');
+    }
+
+    // 获取所有链条以找到子链条
+    const allChains = await this.getChains();
+    const chainsToDelete = this.findChainAndChildren(chainId, allChains);
+    
+    // 批量永久删除
+    const { error } = await supabase
+      .from('chains')
+      .delete()
+      .in('id', chainsToDelete.map(c => c.id))
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('永久删除链条失败:', error);
+      throw new Error(`永久删除链条失败: ${error.message}`);
+    }
+  }
+
+  async cleanupExpiredDeletedChains(olderThanDays: number = 30): Promise<number> {
+    const user = await getCurrentUser();
+    if (!user) {
+      return 0;
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+
+    // 查找过期的已删除链条
+    const { data: expiredChains, error: selectError } = await supabase
+      .from('chains')
+      .select('id')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null)
+      .lt('deleted_at', cutoffDate.toISOString());
+
+    if (selectError) {
+      console.error('查找过期链条失败:', selectError);
+      throw new Error(`查找过期链条失败: ${selectError.message}`);
+    }
+
+    if (!expiredChains || expiredChains.length === 0) {
+      return 0;
+    }
+
+    // 永久删除过期链条
+    const { error: deleteError } = await supabase
+      .from('chains')
+      .delete()
+      .in('id', expiredChains.map(c => c.id))
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('清理过期链条失败:', deleteError);
+      throw new Error(`清理过期链条失败: ${deleteError.message}`);
+    }
+
+    return expiredChains.length;
+  }
+
+  // 辅助方法：查找链条及其所有子链条
+  private findChainAndChildren(chainId: string, allChains: Chain[]): Chain[] {
+    const result: Chain[] = [];
+    const visited = new Set<string>();
+
+    const findRecursive = (id: string) => {
+      if (visited.has(id)) return;
+      visited.add(id);
+
+      const chain = allChains.find(c => c.id === id);
+      if (chain) {
+        result.push(chain);
+        // 查找所有子链条
+        const children = allChains.filter(c => c.parentId === id);
+        children.forEach(child => findRecursive(child.id));
+      }
+    };
+
+    findRecursive(chainId);
+    return result;
   }
 
   async saveChains(chains: Chain[]): Promise<void> {
@@ -200,7 +348,7 @@ export class SupabaseStorage {
     })));
 
     // Verify schema before attempting to save
-    const newColumns = ['is_durationless', 'time_limit_hours', 'time_limit_exceptions', 'group_started_at', 'group_expires_at'];
+    const newColumns = ['is_durationless', 'time_limit_hours', 'time_limit_exceptions', 'group_started_at', 'group_expires_at', 'deleted_at'];
     const schemaCheck = await this.verifySchemaColumns('chains', newColumns);
     
     if (!schemaCheck.hasAllColumns) {
@@ -234,6 +382,7 @@ export class SupabaseStorage {
         auxiliary_signal: chain.auxiliarySignal,
         auxiliary_duration: chain.auxiliaryDuration,
         auxiliary_completion_trigger: chain.auxiliaryCompletionTrigger,
+        deleted_at: chain.deletedAt?.toISOString() || null,
         created_at: chain.createdAt.toISOString(),
         last_completed_at: chain.lastCompletedAt?.toISOString(),
         user_id: user.id,

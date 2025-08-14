@@ -112,12 +112,12 @@ export const storage = {
 
   // 回收箱相关方法
   getActiveChains: (): Chain[] => {
-    return storage.getChains().filter(chain => !chain.deletedAt);
+    return storage.getChains().filter(chain => chain.deletedAt == null);
   },
 
   getDeletedChains: (): DeletedChain[] => {
     return storage.getChains()
-      .filter(chain => chain.deletedAt)
+      .filter(chain => chain.deletedAt != null)
       .map(chain => ({ ...chain, deletedAt: chain.deletedAt! }))
       .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
   },
