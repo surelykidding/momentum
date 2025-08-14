@@ -705,6 +705,9 @@ export class SupabaseStorage {
       isPaused: sessionData.is_paused,
       pausedAt: sessionData.paused_at ? new Date(sessionData.paused_at) : undefined,
       totalPausedTime: sessionData.total_paused_time,
+      // 新增字段，向后兼容
+      isForwardTimer: (sessionData as any).is_forward_timer || false,
+      forwardElapsedTime: (sessionData as any).forward_elapsed_time || 0,
     };
   }
 
@@ -720,17 +723,43 @@ export class SupabaseStorage {
 
     // Insert new session if provided
     if (session) {
-      const { error } = await supabase
-        .from('active_sessions')
-        .insert({
-          chain_id: session.chainId,
-          started_at: session.startedAt.toISOString(),
-          duration: session.duration,
-          is_paused: session.isPaused,
-          paused_at: session.pausedAt?.toISOString(),
-          total_paused_time: session.totalPausedTime,
-          user_id: user.id,
-        });
+      // 尝试使用新字段保存，如果失败则回退到基础字段
+      const tryInsertWithNewFields = async () => {
+        return await supabase
+          .from('active_sessions')
+          .insert({
+            chain_id: session.chainId,
+            started_at: session.startedAt.toISOString(),
+            duration: session.duration,
+            is_paused: session.isPaused,
+            paused_at: session.pausedAt?.toISOString(),
+            total_paused_time: session.totalPausedTime,
+            is_forward_timer: (session as any).isForwardTimer || false,
+            forward_elapsed_time: (session as any).forwardElapsedTime || 0,
+            user_id: user.id,
+          });
+      };
+
+      const tryInsertBasic = async () => {
+        return await supabase
+          .from('active_sessions')
+          .insert({
+            chain_id: session.chainId,
+            started_at: session.startedAt.toISOString(),
+            duration: session.duration,
+            is_paused: session.isPaused,
+            paused_at: session.pausedAt?.toISOString(),
+            total_paused_time: session.totalPausedTime,
+            user_id: user.id,
+          });
+      };
+
+      let { error } = await tryInsertWithNewFields();
+      
+      if (error && (error.code === '42703' || error.message?.includes('is_forward_timer') || error.message?.includes('forward_elapsed_time'))) {
+        console.warn('数据库不支持新的正向计时字段，使用基础字段保存');
+        ({ error } = await tryInsertBasic());
+      }
 
       if (error) {
         console.error('Error saving active session:', error);
@@ -760,6 +789,9 @@ export class SupabaseStorage {
       duration: history.duration,
       wasSuccessful: history.was_successful,
       reasonForFailure: history.reason_for_failure || undefined,
+      // 新增字段，向后兼容
+      actualDuration: (history as any).actual_duration || history.duration,
+      isForwardTimed: (history as any).is_forward_timed || false,
     }));
   }
 
@@ -783,16 +815,41 @@ export class SupabaseStorage {
 
     // Insert new history records
     if (newHistory.length > 0) {
-      const { error } = await supabase
-        .from('completion_history')
-        .insert(newHistory.map(h => ({
-          chain_id: h.chainId,
-          completed_at: h.completedAt.toISOString(),
-          duration: h.duration,
-          was_successful: h.wasSuccessful,
-          reason_for_failure: h.reasonForFailure,
-          user_id: user.id,
-        })));
+      // 尝试使用新字段保存，如果失败则回退到基础字段
+      const tryInsertWithNewFields = async () => {
+        return await supabase
+          .from('completion_history')
+          .insert(newHistory.map(h => ({
+            chain_id: h.chainId,
+            completed_at: h.completedAt.toISOString(),
+            duration: h.duration,
+            was_successful: h.wasSuccessful,
+            reason_for_failure: h.reasonForFailure,
+            actual_duration: (h as any).actualDuration || h.duration,
+            is_forward_timed: (h as any).isForwardTimed || false,
+            user_id: user.id,
+          })));
+      };
+
+      const tryInsertBasic = async () => {
+        return await supabase
+          .from('completion_history')
+          .insert(newHistory.map(h => ({
+            chain_id: h.chainId,
+            completed_at: h.completedAt.toISOString(),
+            duration: h.duration,
+            was_successful: h.wasSuccessful,
+            reason_for_failure: h.reasonForFailure,
+            user_id: user.id,
+          })));
+      };
+
+      let { error } = await tryInsertWithNewFields();
+      
+      if (error && (error.code === '42703' || error.message?.includes('actual_duration') || error.message?.includes('is_forward_timed'))) {
+        console.warn('数据库不支持新的用时字段，使用基础字段保存');
+        ({ error } = await tryInsertBasic());
+      }
 
       if (error) {
         console.error('Error saving completion history:', error);
@@ -908,6 +965,106 @@ export class SupabaseStorage {
     if (error) {
       console.error('保存RSIP元数据失败:', error);
       throw new Error(`保存RSIP元数据失败: ${error.message}`);
+    }
+  }
+
+  // 任务用时统计相关方法
+  async getTaskTimeStats(): Promise<import('../types').TaskTimeStats[]> {
+    // 由于Supabase后端可能没有task_time_stats表，我们使用localStorage作为后备
+    // 这确保了功能的兼容性
+    try {
+      const data = localStorage.getItem('momentum_task_time_stats');
+      if (!data) return [];
+      return JSON.parse(data);
+    } catch (error) {
+      console.warn('获取任务用时统计失败，返回空数组:', error);
+      return [];
+    }
+  }
+
+  async saveTaskTimeStats(stats: import('../types').TaskTimeStats[]): Promise<void> {
+    // 使用localStorage作为后备存储
+    try {
+      localStorage.setItem('momentum_task_time_stats', JSON.stringify(stats));
+    } catch (error) {
+      console.warn('保存任务用时统计失败:', error);
+    }
+  }
+
+  async getLastCompletionTime(chainId: string): Promise<number | null> {
+    const stats = await this.getTaskTimeStats();
+    const chainStats = stats.find(s => s.chainId === chainId);
+    return chainStats?.lastCompletionTime || null;
+  }
+
+  async updateTaskTimeStats(chainId: string, actualDuration: number): Promise<void> {
+    const stats = await this.getTaskTimeStats();
+    const existingIndex = stats.findIndex(s => s.chainId === chainId);
+    
+    if (existingIndex >= 0) {
+      // 更新现有统计
+      const existing = stats[existingIndex];
+      const newTotalTime = existing.totalTime + actualDuration;
+      const newTotalCompletions = existing.totalCompletions + 1;
+      
+      stats[existingIndex] = {
+        ...existing,
+        lastCompletionTime: actualDuration,
+        averageCompletionTime: Math.round(newTotalTime / newTotalCompletions),
+        totalCompletions: newTotalCompletions,
+        totalTime: newTotalTime
+      };
+    } else {
+      // 创建新统计
+      stats.push({
+        chainId,
+        lastCompletionTime: actualDuration,
+        averageCompletionTime: actualDuration,
+        totalCompletions: 1,
+        totalTime: actualDuration
+      });
+    }
+    
+    await this.saveTaskTimeStats(stats);
+  }
+
+  async getTaskAverageTime(chainId: string): Promise<number | null> {
+    const stats = await this.getTaskTimeStats();
+    const chainStats = stats.find(s => s.chainId === chainId);
+    return chainStats?.averageCompletionTime || null;
+  }
+
+  // 向后兼容性：为现有历史记录添加用时数据
+  async migrateCompletionHistoryForTiming(): Promise<void> {
+    try {
+      const history = await this.getCompletionHistory();
+      const chains = await this.getChains();
+      let hasChanges = false;
+
+      const updatedHistory = history.map(record => {
+        // 检查是否需要迁移
+        if ((record as any).actualDuration !== undefined && (record as any).isForwardTimed !== undefined) {
+          return record; // 已经迁移过
+        }
+
+        const chain = chains.find(c => c.id === record.chainId);
+        
+        // 为记录添加用时相关字段
+        const migratedRecord = {
+          ...record,
+          actualDuration: record.duration, // 使用原计划时长作为实际用时
+          isForwardTimed: chain?.isDurationless || false // 根据链条设置判断
+        } as any;
+
+        hasChanges = true;
+        return migratedRecord;
+      });
+
+      if (hasChanges) {
+        await this.saveCompletionHistory(updatedHistory);
+      }
+    } catch (error) {
+      console.warn('迁移完成历史记录时出错:', error);
     }
   }
 }
