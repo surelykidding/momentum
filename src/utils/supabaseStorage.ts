@@ -137,23 +137,8 @@ export class SupabaseStorage {
 
       const chainCount = data?.length || 0;
       logger.dbOperation('getChains', true, { chainCount, userId: user.id });
+      
       return data.map(chain => ({
-    } catch (error) {
-      console.error('getChains 操作异常:', {
-        error: error instanceof Error ? error.message : error,
-        userId: user.id,
-        timestamp: new Date().toISOString()
-      });
-      
-      // For network or other critical errors, throw to let caller handle
-      if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
-        throw error;
-      }
-      
-      return [];
-    }
-
-    return data.map(chain => ({
       id: chain.id,
       name: chain.name,
       parentId: chain.parent_id || undefined,
@@ -181,6 +166,20 @@ export class SupabaseStorage {
       createdAt: new Date(chain.created_at || Date.now()),
       lastCompletedAt: chain.last_completed_at ? new Date(chain.last_completed_at) : undefined,
     }));
+    } catch (error) {
+      console.error('getChains 操作异常:', {
+        error: error instanceof Error ? error.message : error,
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      // For network or other critical errors, throw to let caller handle
+      if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
+        throw error;
+      }
+      
+      return [];
+    }
   }
 
   async saveChains(chains: Chain[]): Promise<void> {
