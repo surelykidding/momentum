@@ -1,4 +1,4 @@
-import { Chain, DeletedChain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta } from '../types';
+import { Chain, DeletedChain, ScheduledSession, ActiveSession, CompletionHistory, RSIPNode, RSIPMeta, TaskTimeStats } from '../types';
 
 const STORAGE_KEYS = {
   CHAINS: 'momentum_chains',
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   COMPLETION_HISTORY: 'momentum_completion_history',
   RSIP_NODES: 'momentum_rsip_nodes',
   RSIP_META: 'momentum_rsip_meta',
+  TASK_TIME_STATS: 'momentum_task_time_stats',
 };
 
 export const storage = {
@@ -167,6 +168,86 @@ export const storage = {
     
     storage.saveChains(remainingChains);
     return chainsToDelete.length;
+  },
+
+  // 任务用时统计相关方法
+  getTaskTimeStats: (): TaskTimeStats[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.TASK_TIME_STATS);
+    if (!data) return [];
+    return JSON.parse(data);
+  },
+
+  saveTaskTimeStats: (stats: TaskTimeStats[]): void => {
+    localStorage.setItem(STORAGE_KEYS.TASK_TIME_STATS, JSON.stringify(stats));
+  },
+
+  getLastCompletionTime: (chainId: string): number | null => {
+    const stats = storage.getTaskTimeStats();
+    const chainStats = stats.find(s => s.chainId === chainId);
+    return chainStats?.lastCompletionTime || null;
+  },
+
+  updateTaskTimeStats: (chainId: string, actualDuration: number): void => {
+    const stats = storage.getTaskTimeStats();
+    const existingIndex = stats.findIndex(s => s.chainId === chainId);
+    
+    if (existingIndex >= 0) {
+      // 更新现有统计
+      const existing = stats[existingIndex];
+      const newTotalTime = existing.totalTime + actualDuration;
+      const newTotalCompletions = existing.totalCompletions + 1;
+      
+      stats[existingIndex] = {
+        ...existing,
+        lastCompletionTime: actualDuration,
+        averageCompletionTime: Math.round(newTotalTime / newTotalCompletions),
+        totalCompletions: newTotalCompletions,
+        totalTime: newTotalTime
+      };
+    } else {
+      // 创建新统计
+      stats.push({
+        chainId,
+        lastCompletionTime: actualDuration,
+        averageCompletionTime: actualDuration,
+        totalCompletions: 1,
+        totalTime: actualDuration
+      });
+    }
+    
+    storage.saveTaskTimeStats(stats);
+  },
+
+  getTaskAverageTime: (chainId: string): number | null => {
+    const stats = storage.getTaskTimeStats();
+    const chainStats = stats.find(s => s.chainId === chainId);
+    return chainStats?.averageCompletionTime || null;
+  },
+
+  // 向后兼容性：为现有历史记录添加用时数据
+  migrateCompletionHistoryForTiming: (): void => {
+    const history = storage.getCompletionHistory();
+    const chains = storage.getChains();
+    let hasChanges = false;
+
+    const updatedHistory = history.map(record => {
+      // 如果记录还没有用时相关字段，添加它们
+      if (record.actualDuration === undefined || record.isForwardTimed === undefined) {
+        const chain = chains.find(c => c.id === record.chainId);
+        hasChanges = true;
+        
+        return {
+          ...record,
+          actualDuration: record.duration, // 使用原计划时长作为实际用时
+          isForwardTimed: chain?.isDurationless || false // 根据链条设置判断是否为正向计时
+        };
+      }
+      return record;
+    });
+
+    if (hasChanges) {
+      storage.saveCompletionHistory(updatedHistory);
+    }
   },
 };
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ActiveSession, Chain } from '../types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
-import { formatDuration } from '../utils/time';
+import { formatDuration, formatElapsedTime, formatTimeDescription, formatLastCompletionReference } from '../utils/time';
 import { notificationManager } from '../utils/notifications';
+import { forwardTimerManager } from '../utils/forwardTimer';
+import { storage } from '../utils/storage';
 
 interface FocusModeProps {
   session: ActiveSession;
@@ -37,8 +39,51 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const [autoResumeAt, setAutoResumeAt] = useState<number | null>(null);
   const [resumeCountdown, setResumeCountdown] = useState<number>(0);
   const resumeTimeoutRef = useRef<number | null>(null);
+  
+  // 正向计时相关状态
+  const [forwardElapsedSeconds, setForwardElapsedSeconds] = useState(0);
+  const [lastCompletionTime, setLastCompletionTime] = useState<number | null>(null);
 
   const isDurationless = !!chain.isDurationless || session.duration === 0;
+
+  // 初始化上次完成时间参考
+  useEffect(() => {
+    if (isDurationless) {
+      const lastTime = storage.getLastCompletionTime(chain.id);
+      setLastCompletionTime(lastTime);
+    }
+  }, [chain.id, isDurationless]);
+
+  // 正向计时逻辑（无时长任务启用）
+  useEffect(() => {
+    if (!isDurationless) return;
+
+    const sessionId = `${session.chainId}_${session.startedAt.getTime()}`;
+    
+    // 启动正向计时器
+    if (!forwardTimerManager.hasTimer(sessionId)) {
+      forwardTimerManager.startTimer(sessionId);
+    }
+
+    const updateForwardTimer = () => {
+      if (session.isPaused && !forwardTimerManager.isPaused(sessionId)) {
+        forwardTimerManager.pauseTimer(sessionId);
+      } else if (!session.isPaused && forwardTimerManager.isPaused(sessionId)) {
+        forwardTimerManager.resumeTimer(sessionId);
+      }
+
+      const elapsed = forwardTimerManager.getCurrentElapsed(sessionId);
+      setForwardElapsedSeconds(elapsed);
+    };
+
+    updateForwardTimer();
+    const interval = setInterval(updateForwardTimer, 1000);
+
+    return () => {
+      clearInterval(interval);
+      // 不在这里清理计时器，因为任务可能还在进行
+    };
+  }, [session, isDurationless]);
 
   // 计时逻辑（有时长时启用）
   useEffect(() => {
@@ -88,7 +133,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   useEffect(() => { setHasShownWarning(false); }, [session.startedAt, session.chainId]);
 
   const elapsedSeconds = isDurationless
-    ? Math.floor((Date.now() - session.startedAt.getTime() - session.totalPausedTime) / 1000)
+    ? forwardElapsedSeconds
     : session.duration * 60 - timeRemaining;
 
   const progress = isDurationless
@@ -271,7 +316,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
         {/* Timer display */}
         <div className="mb-16">
           <div className="text-8xl md:text-9xl font-mono font-light text-gray-900 dark:text-white mb-8 tracking-wider">
-            {isDurationless ? '∞' : formatDuration(timeRemaining)}
+            {isDurationless ? formatElapsedTime(elapsedSeconds) : formatDuration(timeRemaining)}
           </div>
           
           {/* Progress bar */}
@@ -287,7 +332,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               <i className="fas fa-clock text-primary-500"></i>
               <span className="font-mono">
                 {isDurationless
-                  ? `已用时 ${formatDuration(elapsedSeconds)}`
+                  ? `已用时 ${formatTimeDescription(Math.ceil(elapsedSeconds / 60))}`
                   : `${Math.floor((session.duration * 60 - timeRemaining) / 60)}分钟 / ${session.duration}分钟`}
               </span>
             </div>
@@ -296,6 +341,13 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               <span className="font-mono">#{chain.currentStreak}</span>
             </div>
           </div>
+          
+          {/* 上次用时参考 */}
+          {isDurationless && lastCompletionTime !== null && (
+            <div className="mt-4 text-gray-500 dark:text-gray-400 text-sm font-chinese">
+              {formatLastCompletionReference(lastCompletionTime)}
+            </div>
+          )}
         </div>
 
         {!session.isPaused && (

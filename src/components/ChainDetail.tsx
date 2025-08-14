@@ -1,7 +1,7 @@
 import React from 'react';
 import { Chain, CompletionHistory } from '../types';
 import { ArrowLeft, Flame, CheckCircle, XCircle, Calendar, Clock, AlertCircle, Trash2, Edit } from 'lucide-react';
-import { formatTime } from '../utils/time';
+import { formatTime, formatActualDuration } from '../utils/time';
 
 interface ChainDetailProps {
   chain: Chain;
@@ -245,7 +245,12 @@ export const ChainDetail: React.FC<ChainDetailProps> = ({
                         </p>
                         <div className="flex items-center space-x-2 text-gray-400 dark:text-slate-500 text-sm">
                           <Clock size={14} />
-                          <span className="font-mono">{formatTime(record.duration)}</span>
+                          <span className="font-mono">
+                            {record.actualDuration 
+                              ? formatActualDuration(record.actualDuration, record.isForwardTimed)
+                              : formatTime(record.duration)
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>

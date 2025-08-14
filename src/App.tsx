@@ -15,6 +15,7 @@ import { isSessionExpired } from './utils/time';
 import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './utils/chainTree';
 import { notificationManager } from './utils/notifications';
 import { startGroupTimer, isGroupExpired, resetGroupProgress } from './utils/timeLimit';
+import { forwardTimerManager } from './utils/forwardTimer';
 
 function App() {
   const [state, setState] = useState<AppState>({
@@ -27,6 +28,7 @@ function App() {
     completionHistory: [],
     rsipNodes: [],
     rsipMeta: {},
+    taskTimeStats: [],
   });
 
   const [showAuxiliaryJudgment, setShowAuxiliaryJudgment] = useState<string | null>(null);
@@ -298,6 +300,25 @@ function App() {
         const completionHistory = await storage.getCompletionHistory();
         const rsipNodes = await storage.getRSIPNodes();
         const rsipMeta = await storage.getRSIPMeta();
+        const taskTimeStats = await storage.getTaskTimeStats();
+
+        // 执行数据迁移以确保历史记录包含用时信息
+        storage.migrateCompletionHistoryForTiming();
+        
+        // 执行完整的数据迁移（仅在开发环境中记录详细信息）
+        if (process.env.NODE_ENV === 'development') {
+          try {
+            const { dataMigrationManager } = await import('./utils/dataMigration');
+            const migrationResult = await dataMigrationManager.migrateAll();
+            if (!migrationResult.success || migrationResult.errors.length > 0) {
+              console.warn('数据迁移完成，但有警告:', migrationResult);
+            } else {
+              console.log('数据迁移成功完成');
+            }
+          } catch (migrationError) {
+            console.warn('数据迁移过程中出现错误:', migrationError);
+          }
+        }
 
         console.log('设置应用状态，链数量:', chains.length);
         setState(prev => ({
@@ -308,6 +329,7 @@ function App() {
           completionHistory,
           rsipNodes,
           rsipMeta,
+          taskTimeStats,
           currentView: activeSession ? 'focus' : 'dashboard',
         }));
 
@@ -627,6 +649,16 @@ function App() {
     const chain = state.chains.find(c => c.id === state.activeSession!.chainId);
     if (!chain) return;
 
+    // 计算实际用时
+    let actualDuration = state.activeSession.duration; // 默认使用计划时长
+    
+    if (chain.isDurationless) {
+      // 对于无时长任务，从正向计时器获取实际用时
+      const sessionId = `${state.activeSession.chainId}_${state.activeSession.startedAt.getTime()}`;
+      const elapsedSeconds = forwardTimerManager.stopTimer(sessionId);
+      actualDuration = Math.ceil(elapsedSeconds / 60); // 转换为分钟并向上取整
+    }
+
     // 显示任务完成通知
     const newStreak = chain.currentStreak + 1;
     notificationManager.notifyTaskCompleted(chain.name, newStreak);
@@ -636,6 +668,8 @@ function App() {
       completedAt: new Date(),
       duration: state.activeSession.duration,
       wasSuccessful: true,
+      actualDuration: actualDuration,
+      isForwardTimed: !!chain.isDurationless,
     };
 
     setState(prev => {
@@ -660,6 +694,11 @@ function App() {
       storage.saveChains(updatedChains);
       storage.saveActiveSession(null);
       storage.saveCompletionHistory(updatedHistory);
+      
+      // 更新用时统计（仅对成功完成的任务）
+      if (completionRecord.actualDuration) {
+        storage.updateTaskTimeStats(chain.id, completionRecord.actualDuration);
+      }
 
       return {
         ...prev,
@@ -677,12 +716,20 @@ function App() {
     const chain = state.chains.find(c => c.id === state.activeSession!.chainId);
     if (!chain) return;
 
+    // 清理正向计时器（如果是无时长任务）
+    if (chain.isDurationless) {
+      const sessionId = `${state.activeSession.chainId}_${state.activeSession.startedAt.getTime()}`;
+      forwardTimerManager.clearTimer(sessionId);
+    }
+
     const completionRecord: CompletionHistory = {
       chainId: chain.id,
       completedAt: new Date(),
       duration: state.activeSession.duration,
       wasSuccessful: false,
       reasonForFailure: reason || '用户主动中断',
+      actualDuration: state.activeSession.duration, // 中断时使用计划时长
+      isForwardTimed: !!chain.isDurationless,
     };
 
     setState(prev => {

@@ -66,6 +66,9 @@ export interface ActiveSession {
   isPaused: boolean;
   pausedAt?: Date;
   totalPausedTime: number;
+  // 正向计时相关字段
+  isForwardTimer?: boolean; // 是否为正向计时模式
+  forwardElapsedTime?: number; // 正向计时已用时间（秒）
 }
 
 export interface CompletionHistory {
@@ -74,6 +77,18 @@ export interface CompletionHistory {
   duration: number;
   wasSuccessful: boolean;
   reasonForFailure?: string;
+  // 实际用时相关字段
+  actualDuration?: number; // 实际用时（分钟）
+  isForwardTimed?: boolean; // 是否为正向计时任务
+}
+
+// 任务用时统计接口
+export interface TaskTimeStats {
+  chainId: string;
+  lastCompletionTime?: number; // 上次完成用时（分钟）
+  averageCompletionTime?: number; // 平均完成用时（分钟）
+  totalCompletions: number; // 总完成次数
+  totalTime: number; // 总用时（分钟）
 }
 
 // RSIP（递归稳态迭代协议）类型定义
@@ -112,4 +127,6 @@ export interface AppState {
   // RSIP
   rsipNodes: RSIPNode[];
   rsipMeta: RSIPMeta;
+  // 任务用时统计
+  taskTimeStats: TaskTimeStats[];
 }
