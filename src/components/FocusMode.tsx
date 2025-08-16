@@ -7,6 +7,7 @@ import { forwardTimerManager } from '../utils/forwardTimer';
 import { storage } from '../utils/storage';
 import { exceptionRuleManager } from '../services/ExceptionRuleManager';
 import { RuleSelectionDialog } from './RuleSelectionDialog';
+import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { UserFeedbackDisplay } from './UserFeedbackDisplay';
 import { userFeedbackHandler } from '../services/UserFeedbackHandler';
 import { errorRecoveryManager } from '../services/ErrorRecoveryManager';
@@ -15,7 +16,7 @@ import { EnhancedExceptionRuleException } from '../types';
 interface FocusModeProps {
   session: ActiveSession;
   chain: Chain;
-  onComplete: () => void;
+  onComplete: (description?: string, notes?: string) => void;
   onPause: (duration?: number) => void;
   onResume: () => void;
   onRuleUsed?: (rule: ExceptionRule, actionType: 'pause' | 'early_completion', pauseOptions?: PauseOptions) => void;
@@ -36,6 +37,9 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const [showRuleSelection, setShowRuleSelection] = useState(false);
   const [pendingActionType, setPendingActionType] = useState<'pause' | 'early_completion' | null>(null);
   
+  // 任务完成对话框状态
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  
   // 暂停后自动恢复
   const AUTO_RESUME_STORAGE_KEY = 'momentum_auto_resume';
   const [autoResumeAt, setAutoResumeAt] = useState<number | null>(null);
@@ -46,6 +50,10 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   // 正向计时相关状态
   const [forwardElapsedSeconds, setForwardElapsedSeconds] = useState(0);
   const [lastCompletionTime, setLastCompletionTime] = useState<number | null>(null);
+  
+  // 最小时长相关状态
+  const [hasReachedMinimum, setHasReachedMinimum] = useState(false);
+  const [minimumCountdown, setMinimumCountdown] = useState(0);
   
   // 全屏模式状态
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -80,6 +88,18 @@ export const FocusMode: React.FC<FocusModeProps> = ({
 
       const elapsed = forwardTimerManager.getCurrentElapsed(sessionId);
       setForwardElapsedSeconds(elapsed);
+      
+      // 检查最小时长进度
+      if (chain.minimumDuration && chain.minimumDuration > 0) {
+        const minimumSeconds = chain.minimumDuration * 60;
+        if (elapsed >= minimumSeconds) {
+          setHasReachedMinimum(true);
+          setMinimumCountdown(0);
+        } else {
+          setHasReachedMinimum(false);
+          setMinimumCountdown(minimumSeconds - elapsed);
+        }
+      }
     };
 
     updateForwardTimer();
@@ -125,7 +145,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
       }
 
       if (remaining <= 0) {
-        onComplete();
+        setShowCompletionDialog(true);
       }
     };
 
@@ -166,8 +186,27 @@ export const FocusMode: React.FC<FocusModeProps> = ({
 
   // 处理提前完成操作
   const handleEarlyCompleteClick = () => {
-    setPendingActionType('early_completion');
-    setShowRuleSelection(true);
+    // 对于无限时长任务，直接显示完成对话框
+    if (isDurationless) {
+      setShowCompletionDialog(true);
+    } else {
+      // 对于有时长任务，先显示规则选择对话框
+      setPendingActionType('early_completion');
+      setShowRuleSelection(true);
+    }
+  };
+
+  // 处理直接完成任务（无需规则）
+  const handleDirectComplete = (description?: string, notes?: string) => {
+    setShowCompletionDialog(false);
+    onComplete(description, notes);
+  };
+
+  // 处理规则选择后的完成
+  const handleRuleBasedComplete = (description?: string, notes?: string) => {
+    setShowCompletionDialog(false);
+    // 这里我们已经有了规则选择，现在可以完成任务
+    onComplete(description, notes);
   };
 
   // 处理规则选择（增强版本）
@@ -223,7 +262,11 @@ export const FocusMode: React.FC<FocusModeProps> = ({
         }
       } else if (pendingActionType === 'early_completion') {
         clearAutoResumeSchedule();
-        onComplete();
+        // 重置规则选择状态，然后显示完成对话框
+        setShowRuleSelection(false);
+        setPendingActionType(null);
+        setShowCompletionDialog(true);
+        return; // 早期返回，避免下面的状态重置
       }
       
       // 重置状态
@@ -385,7 +428,14 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     setPendingActionType(null);
     
     // 显示取消信息
-    userFeedbackHandler.showInfo('操作已取消', '您可以随时重新选择规则');
+    userFeedbackHandler.showInfo('操作已取消', '您可以继续任务或重新选择操作');
+  };
+
+  // 处理完成对话框取消
+  const handleCompletionDialogCancel = () => {
+    setShowCompletionDialog(false);
+    // 如果是因为计时器到期而显示的对话框，需要处理特殊情况
+    // 对于有时长任务，可能需要继续倒计时或其他处理
   };
 
   // 自动恢复相关
@@ -623,18 +673,73 @@ export const FocusMode: React.FC<FocusModeProps> = ({
               {formatLastCompletionReference(lastCompletionTime)}
             </div>
           )}
+          
+          {/* 最小时长倒计时 */}
+          {isDurationless && chain.minimumDuration && chain.minimumDuration > 0 && !hasReachedMinimum && (
+            <div className="mt-4 text-indigo-600 dark:text-indigo-400 text-lg font-chinese">
+              <div className="flex items-center justify-center space-x-2">
+                <i className="fas fa-hourglass-half text-indigo-500"></i>
+                <span>还需 {Math.floor(minimumCountdown / 60)}分{minimumCountdown % 60}秒 达到最小时长</span>
+              </div>
+            </div>
+          )}
+          
+          {/* 已达到最小时长提示 */}
+          {isDurationless && chain.minimumDuration && chain.minimumDuration > 0 && hasReachedMinimum && (
+            <div className="mt-4 text-green-600 dark:text-green-400 text-lg font-chinese">
+              <div className="flex items-center justify-center space-x-2">
+                <i className="fas fa-check-circle text-green-500"></i>
+                <span>已达到最小时长 {chain.minimumDuration} 分钟，可以完成任务</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {!session.isPaused && (
           <div className="flex items-center justify-center space-x-4">
             {isDurationless ? (
-              <button 
-                onClick={handleEarlyCompleteClick} 
-                className="px-8 py-4 rounded-3xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300 shadow-lg flex items-center space-x-2"
-              >
-                <CheckCircle size={20} />
-                <span>完成任务</span>
-              </button>
+              <>
+                <button 
+                  onClick={handlePauseClick} 
+                  className="px-6 py-3 rounded-2xl bg-yellow-500/90 hover:bg-yellow-500 text-white font-chinese transition-all duration-300 flex items-center space-x-2"
+                >
+                  <Settings size={16} />
+                  <span>暂停</span>
+                </button>
+                {/* 如果没有设置最小时长，显示完成任务按钮 */}
+                {(!chain.minimumDuration || chain.minimumDuration === 0) && (
+                  <button 
+                    onClick={handleEarlyCompleteClick} 
+                    className="px-8 py-4 rounded-3xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300 shadow-lg flex items-center space-x-2"
+                  >
+                    <CheckCircle size={20} />
+                    <span>完成任务</span>
+                  </button>
+                )}
+                
+                {/* 如果设置了最小时长，根据是否达到显示不同按钮 */}
+                {chain.minimumDuration && chain.minimumDuration > 0 && (
+                  <>
+                    {!hasReachedMinimum ? (
+                      <button 
+                        onClick={handleEarlyCompleteClick} 
+                        className="px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-chinese transition-all duration-300 flex items-center space-x-2"
+                      >
+                        <CheckCircle size={16} />
+                        <span>提前完成</span>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleEarlyCompleteClick} 
+                        className="px-8 py-4 rounded-3xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300 shadow-lg flex items-center space-x-2"
+                      >
+                        <CheckCircle size={20} />
+                        <span>完成任务</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </>
             ) : (
               <>
                 <button 
@@ -695,6 +800,17 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           onRuleSelected={handleRuleSelected}
           onCreateNewRule={handleCreateNewRule}
           onCancel={handleRuleSelectionCancel}
+        />
+      )}
+
+      {/* Task Completion Dialog */}
+      {showCompletionDialog && (
+        <TaskCompletionDialog
+          isOpen={showCompletionDialog}
+          chainName={chain.name}
+          chainId={chain.id}
+          onComplete={handleDirectComplete}
+          onCancel={handleCompletionDialogCancel}
         />
       )}
 

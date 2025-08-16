@@ -56,6 +56,10 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     chain?.duration ? !DURATION_PRESETS.includes(chain.duration) : false
   );
   const [isDurationless, setIsDurationless] = useState<boolean>(!!chain?.isDurationless);
+  const [minimumDuration, setMinimumDuration] = useState(chain?.minimumDuration || 30);
+  const [isCustomMinimumDuration, setIsCustomMinimumDuration] = useState(
+    chain?.minimumDuration ? !DURATION_PRESETS.includes(chain.minimumDuration) : false
+  );
   const [description, setDescription] = useState(chain?.description || '');
   
   // 辅助链状态
@@ -119,6 +123,7 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
       trigger: type === 'group' && !trigger ? '任务群容器' : (trigger === '自定义触发器' ? customTrigger.trim() : trigger),
       duration: finalDuration,
       isDurationless,
+      minimumDuration: isDurationless ? minimumDuration : undefined,
       description: description.trim(),
       auxiliarySignal: type === 'group' && !auxiliarySignal ? '打响指' : (auxiliarySignal === '自定义信号' ? customAuxiliarySignal.trim() : auxiliarySignal),
       auxiliaryDuration: finalAuxiliaryDuration,
@@ -294,9 +299,74 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </label>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-slate-400 font-chinese">
-                  开启后，本任务不会倒计时，你可以在专注模式中自行点击“完成任务”结束。
+                  开启后，本任务不会倒计时，你可以在专注模式中自行点击"完成任务"结束。
                 </p>
               </div>
+
+              {/* 最小时长设置（仅无时长任务显示） */}
+              {isDurationless && (
+                <div className="bento-card border-l-4 border-l-indigo-500 animate-scale-in">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <i className="fas fa-hourglass-start text-indigo-500"></i>
+                    <div>
+                      <h4 className="text-lg font-bold font-chinese text-gray-900 dark:text-slate-100">最小时长</h4>
+                      <p className="text-xs font-mono text-gray-500">MINIMUM DURATION</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-slate-400 font-chinese mb-4">
+                    设置最小时长后，达到时间后会出现提前完成按钮
+                  </p>
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+                    {DURATION_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setMinimumDuration(preset);
+                          setIsCustomMinimumDuration(false);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm font-chinese transition-all duration-300 ${
+                          minimumDuration === preset && !isCustomMinimumDuration
+                            ? 'bg-indigo-500 text-white shadow-lg'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+                        }`}
+                      >
+                        {preset}分钟
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="480"
+                        step="1"
+                        value={isCustomMinimumDuration ? minimumDuration : ''}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!isNaN(value) && value > 0) {
+                            setMinimumDuration(value);
+                            setIsCustomMinimumDuration(true);
+                          }
+                        }}
+                        placeholder="自定义分钟数"
+                        className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300 font-chinese"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMinimumDuration(0);
+                        setIsCustomMinimumDuration(false);
+                      }}
+                      className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    >
+                      不设置
+                    </button>
+                  </div>
+                </div>
+              )}
               
               {/* 神圣座位 */}
               <div className={`bento-card border-l-4 border-l-primary-500 animate-scale-in`}>

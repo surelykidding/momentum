@@ -25,6 +25,7 @@ export interface Chain {
   groupExpiresAt?: Date; // 任务群过期时间
   // 无时长任务（手动结束）
   isDurationless?: boolean; // 为 true 时不倒计时，由用户手动结束
+  minimumDuration?: number; // 无时长任务的最小时长（分钟），达到后可提前完成
   // 回收箱功能
   deletedAt?: Date | null; // 软删除时间戳，null表示未删除
   createdAt: Date;
@@ -80,6 +81,9 @@ export interface CompletionHistory {
   // 实际用时相关字段
   actualDuration?: number; // 实际用时（分钟）
   isForwardTimed?: boolean; // 是否为正向计时任务
+  // 任务完成描述和备注
+  description?: string; // 任务完成描述
+  notes?: string; // 备注
 }
 
 // 任务用时统计接口

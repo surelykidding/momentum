@@ -694,7 +694,7 @@ function App() {
     });
   };
 
-  const handleCompleteSession = () => {
+  const handleCompleteSession = (description?: string, notes?: string) => {
     if (!state.activeSession) return;
 
     const chain = state.chains.find(c => c.id === state.activeSession!.chainId);
@@ -721,6 +721,8 @@ function App() {
       wasSuccessful: true,
       actualDuration: actualDuration,
       isForwardTimed: !!chain.isDurationless,
+      description: description,
+      notes: notes,
     };
 
     setState(prev => {
