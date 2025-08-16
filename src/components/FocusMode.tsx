@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ActiveSession, Chain, ExceptionRule, ExceptionRuleType, SessionContext, PauseOptions } from '../types';
-import { CheckCircle, Settings } from 'lucide-react';
+import { CheckCircle, Settings, Maximize, Minimize, X } from 'lucide-react';
 import { formatDuration, formatElapsedTime, formatTimeDescription, formatLastCompletionReference } from '../utils/time';
 import { notificationManager } from '../utils/notifications';
 import { forwardTimerManager } from '../utils/forwardTimer';
@@ -46,6 +46,9 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   // 正向计时相关状态
   const [forwardElapsedSeconds, setForwardElapsedSeconds] = useState(0);
   const [lastCompletionTime, setLastCompletionTime] = useState<number | null>(null);
+  
+  // 全屏模式状态
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isDurationless = !!chain.isDurationless || session.duration === 0;
 
@@ -492,8 +495,80 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     }
   }, [session.isPaused]);
 
+  // 全屏模式处理
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        exitFullscreen();
+      } else if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isFullscreen]);
+
+  // 全屏模式函数
+  const enterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (error) {
+      console.error('Failed to enter fullscreen:', error);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.error('Failed to exit fullscreen:', error);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (isFullscreen) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-[#161615] dark:via-black dark:to-[#161615] flex items-center justify-center relative overflow-hidden">
+      {/* Fullscreen Controls */}
+      <div className="absolute top-4 right-4 z-20 flex items-center space-x-2">
+        {!isFullscreen ? (
+          <button
+            onClick={enterFullscreen}
+            className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-600 dark:text-gray-300 transition-all duration-300 border border-white/20"
+            title="进入全屏 (F11)"
+          >
+            <Maximize size={20} />
+          </button>
+        ) : (
+          <button
+            onClick={exitFullscreen}
+            className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm hover:bg-white/20 text-gray-600 dark:text-gray-300 transition-all duration-300 border border-white/20"
+            title="退出全屏 (ESC)"
+          >
+            <X size={20} />
+          </button>
+        )}
+      </div>
+
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-primary-500/5 dark:from-primary-500/5 dark:via-transparent dark:to-primary-500/5"></div>
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 dark:bg-primary-500/10 rounded-full blur-3xl animate-pulse-slow"></div>

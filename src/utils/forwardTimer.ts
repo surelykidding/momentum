@@ -14,6 +14,8 @@ interface TimerState {
 export class ForwardTimerManager {
   private timers: Map<string, TimerState> = new Map();
   private visibilityHandler: (() => void) | null = null;
+  private focusHandler: (() => void) | null = null;
+  private blurHandler: (() => void) | null = null;
 
   constructor() {
     this.setupVisibilityHandler();
@@ -41,9 +43,10 @@ export class ForwardTimerManager {
             if (!timer.isPaused && timer.lastVisibilityChange) {
               const hiddenDuration = now - timer.lastVisibilityChange;
               // 如果隐藏时间超过1秒，则认为是真正的标签页切换
-              if (hiddenDuration > 1000) {
-                timer.totalPausedDuration += hiddenDuration;
-              }
+              // 注释掉暂停时间累积，让计时器继续运行
+              // if (hiddenDuration > 1000) {
+              //   timer.totalPausedDuration += hiddenDuration;
+              // }
               timer.lastVisibilityChange = undefined;
             }
           });
@@ -51,6 +54,18 @@ export class ForwardTimerManager {
       };
 
       document.addEventListener('visibilitychange', this.visibilityHandler);
+      
+      // 添加窗口焦点事件监听，确保最小化窗口时也继续计时
+      this.focusHandler = () => {
+        // 窗口获得焦点时，不需要特殊处理，让计时器自然继续
+      };
+      
+      this.blurHandler = () => {
+        // 窗口失去焦点时，不暂停计时器，让它继续运行
+      };
+      
+      window.addEventListener('focus', this.focusHandler);
+      window.addEventListener('blur', this.blurHandler);
     }
   }
 
@@ -294,6 +309,16 @@ export class ForwardTimerManager {
     if (this.visibilityHandler && typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
+    }
+    
+    if (this.focusHandler && typeof window !== 'undefined') {
+      window.removeEventListener('focus', this.focusHandler);
+      this.focusHandler = null;
+    }
+    
+    if (this.blurHandler && typeof window !== 'undefined') {
+      window.removeEventListener('blur', this.blurHandler);
+      this.blurHandler = null;
     }
     
     this.timers.clear();
