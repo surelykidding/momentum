@@ -10,6 +10,9 @@ import { Download, TreePine, Trash2 } from 'lucide-react';
 import { NotificationToggle } from './NotificationToggle';
 import { RecycleBinModal } from './RecycleBinModal';
 import { RecycleBinService } from '../services/RecycleBinService';
+import { AccountModal } from './AccountModal';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { User } from 'lucide-react';
 
 interface DashboardProps {
   chains: Chain[];
@@ -46,6 +49,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [showImportExport, setShowImportExport] = React.useState(false);
   const [showRecycleBin, setShowRecycleBin] = React.useState(false);
+  const [showAccountModal, setShowAccountModal] = React.useState(false);
   const [recycleBinCount, setRecycleBinCount] = React.useState(0);
   
   console.log('Dashboard - 收到的chains:', chains.length, chains.map(c => ({ id: c.id, name: c.name, type: c.type, parentId: c.parentId })));
@@ -80,6 +84,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="max-w-7xl mx-auto">
         {/* Theme toggle in header */}
         <div className="flex justify-end items-center space-x-4 mb-6">
+          {isSupabaseConfigured && (
+            <button
+              onClick={() => setShowAccountModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-2xl border border-gray-200 dark:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+              title="账号管理"
+            >
+              <User size={18} />
+              <span className="font-chinese text-sm">账号</span>
+            </button>
+          )}
           <NotificationToggle />
           <ThemeToggle variant="dropdown" showLabel />
         </div>
@@ -270,6 +284,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               setRecycleBinCount(stats.totalDeleted);
             }
           }}
+        />
+      )}
+
+      {/* Account Modal */}
+      {showAccountModal && (
+        <AccountModal
+          isOpen={showAccountModal}
+          onClose={() => setShowAccountModal(false)}
         />
       )}
     </div>
