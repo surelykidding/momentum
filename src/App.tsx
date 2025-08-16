@@ -16,6 +16,15 @@ import { buildChainTree, getNextUnitInGroup, updateGroupCompletions } from './ut
 import { notificationManager } from './utils/notifications';
 import { startGroupTimer, isGroupExpired, resetGroupProgress } from './utils/timeLimit';
 import { forwardTimerManager } from './utils/forwardTimer';
+import { initializeRuleSystem } from './utils/initializeRuleSystem';
+import { runMigration } from './utils/migration';
+import './utils/quickFix'; // 自动运行快速修复
+import './utils/debugRuleCreation'; // 调试工具
+import './utils/emergencyFix'; // 紧急修复
+import './utils/simpleTest'; // 简单测试
+import './utils/fixRuleIds'; // 修复规则ID
+import './utils/directFix'; // 直接修复
+import './utils/ultimateFix'; // 终极修复
 
 function App() {
   const [state, setState] = useState<AppState>({
@@ -40,6 +49,21 @@ function App() {
   
   useEffect(() => {
     console.log('存储源确定:', isSupabaseConfigured ? 'Supabase' : 'LocalStorage');
+    
+    // 初始化规则系统
+    initializeRuleSystem().then(result => {
+      if (result.success) {
+        console.log('✅ 规则系统初始化成功');
+      } else {
+        console.error('❌ 规则系统初始化失败:', result.message);
+      }
+    }).catch(error => {
+      console.error('❌ 规则系统初始化异常:', error);
+    });
+
+    // 运行迁移脚本
+    runMigration();
+    
     setIsInitialized(true);
   }, []);
 
@@ -425,6 +449,25 @@ function App() {
     }));
   };
 
+  // 辅助函数：安全保存链条数据，保持回收箱完整
+  const safelySaveChains = async (updatedActiveChains: Chain[]) => {
+    try {
+      // 获取所有现有链条（包括已删除的）
+      const allExistingChains = await storage.getChains();
+      const deletedChains = allExistingChains.filter(chain => chain.deletedAt != null);
+      
+      // 合并活跃链条和已删除链条
+      const allUpdatedChains = [...updatedActiveChains, ...deletedChains];
+      
+      // 保存合并后的数据
+      await storage.saveChains(allUpdatedChains);
+      console.log('✅ 安全保存完成，回收箱数据已保留');
+    } catch (error) {
+      console.error('❌ 安全保存失败:', error);
+      throw error;
+    }
+  };
+
   const handleEditChain = (chainId: string) => {
     const chain = state.chains.find(c => c.id === chainId);
     if (chain) {
@@ -442,22 +485,30 @@ function App() {
     console.log('当前所有链条:', state.chains.map(c => ({ id: c.id, name: c.name })));
     
     try {
-      let updatedChains: Chain[];
+      // CRITICAL FIX: 获取所有链条（包括已删除的）以避免覆盖回收箱数据
+      const allExistingChains = await storage.getChains();
+      console.log('获取到所有现有链条（包括已删除的）:', allExistingChains.length);
+      
+      // 分离活跃链条和已删除链条
+      const activeChains = allExistingChains.filter(chain => chain.deletedAt == null);
+      const deletedChains = allExistingChains.filter(chain => chain.deletedAt != null);
+      console.log('活跃链条数量:', activeChains.length, '已删除链条数量:', deletedChains.length);
+      
+      let updatedActiveChains: Chain[];
       
       if (state.editingChain) {
         // Editing existing chain
         console.log('编辑模式 - 原始链条数据:', state.editingChain);
         console.log('新的链条数据:', chainData);
         
-        updatedChains = state.chains.map(chain =>
+        updatedActiveChains = state.chains.map(chain =>
           chain.id === state.editingChain!.id
             ? { ...chain, ...chainData }
             : chain
         );
-        console.log('编辑现有链，更新后的链数组长度:', updatedChains.length);
-        const editedChain = updatedChains.find(c => c.id === state.editingChain!.id);
+        console.log('编辑现有链，更新后的活跃链数组长度:', updatedActiveChains.length);
+        const editedChain = updatedActiveChains.find(c => c.id === state.editingChain!.id);
         console.log('编辑后的链数据:', editedChain);
-        console.log('编辑后所有链条:', updatedChains.map(c => ({ id: c.id, name: c.name })));
       } else {
         // Creating new chain
         const newChain: Chain = {
@@ -471,27 +522,27 @@ function App() {
           createdAt: new Date(),
         };
         console.log('创建新链:', newChain);
-        updatedChains = [...state.chains, newChain];
-        console.log('添加新链后的链数组长度:', updatedChains.length);
+        updatedActiveChains = [...state.chains, newChain];
+        console.log('添加新链后的活跃链数组长度:', updatedActiveChains.length);
       }
       
-      // 确保所有链都有必需的字段
-      updatedChains = updatedChains.map(chain => ({
+      // 确保所有活跃链都有必需的字段
+      updatedActiveChains = updatedActiveChains.map(chain => ({
         ...chain,
         type: chain.type || 'unit',
         sortOrder: chain.sortOrder || Math.floor(Date.now() / 1000),
         parentId: chain.parentId || undefined,
       }));
       
-      console.log('准备保存到存储...');
-      // Wait for data to be saved before updating UI
-      await storage.saveChains(updatedChains);
-      console.log('数据保存成功，更新UI状态');
+      console.log('准备安全保存到存储（包含回收箱数据）...');
+      // 使用安全保存方法
+      await safelySaveChains(updatedActiveChains);
+      console.log('数据保存成功（包含回收箱数据），更新UI状态');
       
-      // Only update state after successful save
+      // Only update state after successful save (only with active chains)
       setState(prev => ({
         ...prev,
-        chains: updatedChains,
+        chains: updatedActiveChains,
         currentView: 'dashboard',
         editingChain: null,
       }));
@@ -504,7 +555,7 @@ function App() {
       
       // 如果保存失败，重新加载数据以确保状态一致性
       try {
-        const currentChains = await storage.getChains();
+        const currentChains = await storage.getActiveChains();
         setState(prev => ({
           ...prev,
           chains: currentChains,
@@ -544,7 +595,7 @@ function App() {
         // Save to storage first
         await Promise.all([
           storage.saveScheduledSessions(updatedSessions),
-          storage.saveChains(updatedChains)
+          safelySaveChains(updatedChains)
         ]);
         
         // Update state after successful save
@@ -691,7 +742,10 @@ function App() {
 
       const updatedHistory = [...prev.completionHistory, completionRecord];
       
-      storage.saveChains(updatedChains);
+      // 使用安全保存方法保持回收箱数据完整
+      safelySaveChains(updatedChains).catch(error => {
+        console.error('完成任务时保存链条数据失败:', error);
+      });
       storage.saveActiveSession(null);
       storage.saveCompletionHistory(updatedHistory);
       
@@ -745,7 +799,10 @@ function App() {
 
       const updatedHistory = [...prev.completionHistory, completionRecord];
       
-      storage.saveChains(updatedChains);
+      // 使用安全保存方法保持回收箱数据完整
+      safelySaveChains(updatedChains).catch(error => {
+        console.error('中断任务时保存链条数据失败:', error);
+      });
       storage.saveActiveSession(null);
       storage.saveCompletionHistory(updatedHistory);
 
@@ -816,7 +873,10 @@ function App() {
           : chain
       );
       
-      storage.saveChains(updatedChains);
+      // 使用安全保存方法保持回收箱数据完整
+      safelySaveChains(updatedChains).catch(error => {
+        console.error('辅助判断失败时保存链条数据失败:', error);
+      });
       storage.saveScheduledSessions(updatedScheduledSessions);
       
       return {
@@ -845,7 +905,10 @@ function App() {
           : chain
       );
       
-      storage.saveChains(updatedChains);
+      // 使用安全保存方法保持回收箱数据完整
+      safelySaveChains(updatedChains).catch(error => {
+        console.error('辅助判断允许时保存链条数据失败:', error);
+      });
       storage.saveScheduledSessions(updatedScheduledSessions);
       
       return {
@@ -875,7 +938,10 @@ function App() {
           : chain
       );
       
-      storage.saveChains(updatedChains);
+      // 使用安全保存方法保持回收箱数据完整
+      safelySaveChains(updatedChains).catch(error => {
+        console.error('添加异常时保存链条数据失败:', error);
+      });
       
       return {
         ...prev,
@@ -996,8 +1062,8 @@ function App() {
       const importedHistory = options?.history || [];
       
       console.log('准备保存导入的数据到存储...');
-      // Wait for data to be saved before updating UI
-      await storage.saveChains(updatedChains);
+      // Wait for data to be saved before updating UI - 使用安全保存方法
+      await safelySaveChains(updatedChains);
       if (Array.isArray(importedHistory) && importedHistory.length > 0) {
         const existing = await storage.getCompletionHistory();
         const merged = [
@@ -1077,8 +1143,8 @@ function App() {
       }
       
       console.log('准备保存导入后的数据到存储...');
-      // Wait for data to be saved before updating UI
-      await storage.saveChains(updatedChains);
+      // Wait for data to be saved before updating UI - 使用安全保存方法
+      await safelySaveChains(updatedChains);
       console.log('导入数据保存成功，更新UI状态');
       
       // Only update state after successful save

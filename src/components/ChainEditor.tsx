@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Chain, ChainType } from '../types';
-import { ArrowLeft, Save, Headphones, Code, BookOpen, Dumbbell, Coffee, Target, Clock, Bell } from 'lucide-react';
+import { ArrowLeft, Save, Headphones, Code, BookOpen, Dumbbell, Coffee, Target, Clock, Bell, Tag, Layers, Flame, Calendar, AlignLeft } from 'lucide-react';
+import { PureDOMSlider } from './PureDOMSlider';
+import { ResponsiveContainer } from './ResponsiveContainer';
+import { SettingSection } from './SettingSection';
+import { SliderContainer } from './SliderContainer';
+import { useLayoutOverflowDetection } from '../hooks/useLayoutOverflowDetection';
+import { useMobileOptimization, useTouchOptimization, useVirtualKeyboardAdaptation } from '../hooks/useMobileOptimization';
+import { usePerformanceMonitoring } from '../utils/performanceMonitor';
+import { useRenderCount, useWhyDidYouUpdate } from '../utils/renderOptimization';
 
 interface ChainEditorProps {
   chain?: Chain;
@@ -146,9 +154,42 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
     }
   };
 
+  // 布局溢出检测
+  useLayoutOverflowDetection();
+  
+  // 移动端优化
+  const mobileInfo = useMobileOptimization();
+  useTouchOptimization();
+  const { keyboardHeight, isKeyboardVisible } = useVirtualKeyboardAdaptation();
+  
+  // 性能监控
+  const performance = usePerformanceMonitoring('ChainEditor');
+  const renderCount = useRenderCount('ChainEditor');
+  
+  // 调试重渲染原因
+  useWhyDidYouUpdate('ChainEditor', {
+    chain,
+    isEditing,
+    initialParentId,
+    onSave,
+    onCancel
+  });
+
+  // 启动性能监控
+  useEffect(() => {
+    performance.startMonitoring();
+    return () => performance.stopMonitoring();
+  }, [performance]);
+
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
+    <div 
+      className={`min-h-screen bg-background overflow-x-hidden ${isKeyboardVisible ? 'keyboard-active' : ''}`}
+      style={{ paddingBottom: isKeyboardVisible ? `${keyboardHeight}px` : '0' }}
+    >
+      <ResponsiveContainer 
+        maxWidth="4xl" 
+        className={`py-4 md:py-6 ${mobileInfo.isMobile ? 'px-4' : ''}`}
+      >
         {/* Header */}
         <header className="flex items-center space-x-4 mb-12 animate-fade-in">
           <button
@@ -168,71 +209,69 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-8 animate-slide-up">
-          {/* Chain Name */}
-          <div className="bento-card animate-scale-in">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-2xl bg-primary-500/10 flex items-center justify-center">
-                <i className="fas fa-tag text-primary-500"></i>
+          {/* 基础信息区 */}
+          <SettingSection
+            title="基础信息"
+            icon={<Tag className="text-primary-500" size={20} />}
+            description="设置链条的基本信息"
+          >
+            {/* Chain Name */}
+            <div className="bento-card animate-scale-in">
+              <div className="mb-4">
+                <label htmlFor="chain-name" className="block text-lg font-semibold font-chinese text-gray-900 dark:text-slate-100 mb-2">
+                  链名称
+                </label>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-4 font-chinese">
+                  为您的链条起一个清晰易懂的名称
+                </p>
               </div>
-              <div>
-                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">链名称</h3>
-                <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN NAME</p>
-              </div>
+              <input
+                type="text"
+                id="chain-name"
+                name="chainName"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例如：学习Python、健身30分钟、无干扰写作"
+                className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
+                required
+              />
             </div>
-            <input
-              type="text"
-              id="chain-name"
-              name="chainName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="例如：学习Python、健身30分钟、无干扰写作"
-              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 font-chinese"
-              required
-            />
-          </div>
 
-          {/* Chain Type */}
-          <div className="bento-card animate-scale-in">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                <i className="fas fa-layer-group text-green-500"></i>
+            {/* Chain Type */}
+            <div className="bento-card animate-scale-in">
+              <div className="mb-4">
+                <label htmlFor="chain-type" className="block text-lg font-semibold font-chinese text-gray-900 dark:text-slate-100 mb-2">
+                  任务类型
+                </label>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-4 font-chinese">
+                  选择最适合的任务类型
+                </p>
               </div>
-              <div>
-                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">任务类型</h3>
-                <p className="text-sm font-mono text-gray-500 tracking-wide">CHAIN TYPE</p>
-              </div>
+              <select
+                id="chain-type"
+                name="chainType"
+                value={type}
+                onChange={(e) => setType(e.target.value as ChainType)}
+                className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
+                required
+              >
+                <option value="unit">基础单元</option>
+                <option value="group">任务群容器</option>
+                <option value="assault">突击单元（学习、实验、论文）</option>
+                <option value="recon">侦查单元（信息搜集）</option>
+                <option value="command">指挥单元（制定计划）</option>
+                <option value="special_ops">特勤单元（处理杂事）</option>
+                <option value="engineering">工程单元（运动锻炼）</option>
+                <option value="quartermaster">炊事单元（备餐做饭）</option>
+              </select>
             </div>
-            <select
-              id="chain-type"
-              name="chainType"
-              value={type}
-              onChange={(e) => setType(e.target.value as ChainType)}
-              className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-6 py-4 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 font-chinese"
-              required
-            >
-              <option value="unit">基础单元</option>
-              <option value="group">任务群容器</option>
-              <option value="assault">突击单元（学习、实验、论文）</option>
-              <option value="recon">侦查单元（信息搜集）</option>
-              <option value="command">指挥单元（制定计划）</option>
-              <option value="special_ops">特勤单元（处理杂事）</option>
-              <option value="engineering">工程单元（运动锻炼）</option>
-              <option value="quartermaster">炊事单元（备餐做饭）</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* 主链设置 */}
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 flex items-center justify-center">
-                  <i className="fas fa-fire text-primary-500"></i>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100">主链设置</h3>
-                  <p className="text-sm font-mono text-gray-500 tracking-wide">MAIN CHAIN</p>
-                </div>
-              </div>
+          </SettingSection>
+          {/* 主链设置区 */}
+          <SettingSection
+            title="主链设置"
+            icon={<Flame className="text-primary-500" size={20} />}
+            description="配置主要任务的执行参数"
+          >
               
               {/* 无时长任务开关 */}
               <div className="bento-card border-l-4 border-l-purple-500 animate-scale-in">
@@ -333,57 +372,32 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                     <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
                   </select>
                   {isCustomDuration && (
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-4">
-                        <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
-                        <input
-                          type="range"
-                          id="duration-slider"
-                          name="durationSlider"
-                          min="1"
-                          max="300"
-                          value={duration}
-                          onChange={(e) => setDuration(Number(e.target.value))}
-                          className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                          style={{
-                            background: `linear-gradient(to right, #6366F1 0%, #6366F1 ${((duration - 1) / 299) * 100}%, #E5E7EB ${((duration - 1) / 299) * 100}%, #E5E7EB 100%)`
-                          }}
-                        />
-                        <span className="text-primary-500 font-mono font-semibold min-w-[60px] text-right">
-                          {duration}分钟
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
-                        <input
-                          type="number"
-                          id="duration-input"
-                          name="durationInput"
-                          min="1"
-                          max="300"
-                          value={duration === 0 ? '' : duration}
-                          onChange={(e) => {
-                            if (e.target.value === '') {
-                              setDuration(0);
-                              return;
-                            }
-                            const value = parseInt(e.target.value);
-                            if (isNaN(value)) {
-                              return;
-                            }
-                            if (value >= 1 && value <= 300) {
-                              setDuration(value);
-                            } else if (value < 1) {
-                              setDuration(1);
-                            } else if (value > 300) {
-                              setDuration(300);
-                            }
-                          }}
-                          className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300 w-20 text-center font-mono"
-                        />
-                        <span className="text-gray-500 dark:text-slate-400 font-chinese text-sm">分钟</span>
-                      </div>
-                    </div>
+                    <SliderContainer
+                      label="自定义时长"
+                      description="拖动滑块或使用键盘输入设置任务时长"
+                      orientation="vertical"
+                      showKeyboardInput={true}
+                      keyboardInputProps={{
+                        value: duration,
+                        onChange: setDuration,
+                        min: 1,
+                        max: 300,
+                        unit: '分钟',
+                        placeholder: '输入时长'
+                      }}
+                    >
+                      <PureDOMSlider
+                        id="duration-slider"
+                        name="durationSlider"
+                        min={1}
+                        max={300}
+                        initialValue={duration}
+                        onValueChange={setDuration}
+                        valueFormatter={(v) => `${v}分钟`}
+                        debounceMs={50}
+                        showValue={true}
+                      />
+                    </SliderContainer>
                   )}
                 </div>
               )}
@@ -525,21 +539,15 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   </div>
                 </>
               )}
-            </div>
+          </SettingSection>
 
-            {/* 辅助链设置 */}
-           <div className={`space-y-6 ${type === 'group' ? 'opacity-60' : ''}`}>
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
-                  <i className="fas fa-calendar-alt text-blue-500"></i>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100">辅助链设置</h3>
-                 <p className="text-sm font-mono text-gray-500 tracking-wide">
-                   {type === 'group' ? 'AUXILIARY CHAIN (选填)' : 'AUXILIARY CHAIN'}
-                 </p>
-                </div>
-              </div>
+          {/* 辅助链设置区 */}
+          <SettingSection
+            title="辅助链设置"
+            icon={<Calendar className="text-blue-500" size={20} />}
+            description={type === 'group' ? '任务群的辅助设置（可选）' : '配置预约和完成条件'}
+            className={type === 'group' ? 'opacity-60' : ''}
+          >
                
                {type === 'group' && (
                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-2xl p-4 mb-6">
@@ -625,57 +633,32 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   <option value="custom" className="text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700">自定义时长</option>
                 </select>
                 {isCustomAuxiliaryDuration && (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">自定义:</span>
-                      <input
-                        type="range"
-                        id="auxiliary-duration-slider"
-                        name="auxiliaryDurationSlider"
-                        min="1"
-                        max="120"
-                        value={auxiliaryDuration}
-                        onChange={(e) => setAuxiliaryDuration(Number(e.target.value))}
-                        className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                        style={{
-                          background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB ${((auxiliaryDuration - 1) / 119) * 100}%, #E5E7EB 100%)`
-                        }}
-                      />
-                      <span className="text-blue-500 font-mono font-semibold min-w-[60px] text-right">
-                        {auxiliaryDuration}分钟
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-700 dark:text-slate-300 font-chinese">键盘输入:</span>
-                      <input
-                        type="number"
-                        id="auxiliary-duration-input"
-                        name="auxiliaryDurationInput"
-                        min="1"
-                        max="120"
-                        value={auxiliaryDuration === 0 ? '' : auxiliaryDuration}
-                        onChange={(e) => {
-                          if (e.target.value === '') {
-                            setAuxiliaryDuration(0); // 使用0表示空值状态
-                            return;
-                          }
-                          const value = parseInt(e.target.value);
-                          if (isNaN(value)) {
-                            return; // 忽略非数字输入
-                          }
-                          if (value >= 1 && value <= 120) {
-                            setAuxiliaryDuration(value);
-                          } else if (value < 1) {
-                            setAuxiliaryDuration(1);
-                          } else if (value > 120) {
-                            setAuxiliaryDuration(120);
-                          }
-                        }}
-                        className="bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 w-20 text-center font-mono"
-                      />
-                      <span className="text-gray-500 dark:text-slate-400 font-chinese text-sm">分钟</span>
-                    </div>
-                  </div>
+                  <SliderContainer
+                    label="自定义预约时长"
+                    description="设置预约阶段的持续时间"
+                    orientation="vertical"
+                    showKeyboardInput={true}
+                    keyboardInputProps={{
+                      value: auxiliaryDuration,
+                      onChange: setAuxiliaryDuration,
+                      min: 1,
+                      max: 120,
+                      unit: '分钟',
+                      placeholder: '输入时长'
+                    }}
+                  >
+                    <PureDOMSlider
+                      id="auxiliary-duration-slider"
+                      name="auxiliaryDurationSlider"
+                      min={1}
+                      max={120}
+                      initialValue={auxiliaryDuration}
+                      onValueChange={setAuxiliaryDuration}
+                      valueFormatter={(v) => `${v}分钟`}
+                      debounceMs={50}
+                      showValue={true}
+                    />
+                  </SliderContainer>
                 )}
               </div>
 
@@ -705,20 +688,15 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                   }
                 </p>
               </div>
-            </div>
-          </div>
+          </SettingSection>
 
-          {/* 任务描述 */}
-          <div className="bento-card animate-scale-in">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-2xl bg-gray-500/10 flex items-center justify-center">
-                <i className="fas fa-align-left text-gray-500"></i>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold font-chinese text-gray-900 dark:text-slate-100">任务描述</h3>
-                <p className="text-sm font-mono text-gray-500 tracking-wide">TASK DESCRIPTION</p>
-              </div>
-            </div>
+          {/* 任务描述区 */}
+          <SettingSection
+            title="任务描述"
+            icon={<AlignLeft className="text-gray-500" size={20} />}
+            description="详细描述任务内容和目标"
+          >
+            <div className="bento-card animate-scale-in">
             <textarea
               id="task-description"
               name="taskDescription"
@@ -750,27 +728,28 @@ export const ChainEditor: React.FC<ChainEditorProps> = ({
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          </SettingSection>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 animate-scale-in">
+          {/* 操作按钮区 */}
+          <div className={`action-buttons flex ${mobileInfo.isMobile ? 'flex-col space-y-4' : 'flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6'} animate-scale-in pt-4`}>
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-slate-100 px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 hover:scale-105 font-chinese"
+              className={`mobile-touch-target flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-slate-100 px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 ${mobileInfo.touchSupport ? 'active:scale-98' : 'hover:scale-105'} font-chinese ${mobileInfo.isMobile ? 'min-h-[48px] text-base' : ''}`}
             >
               <span>取消</span>
             </button>
             <button
               type="submit"
-              className="flex-1 gradient-primary hover:shadow-xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 hover:scale-105 shadow-lg font-chinese"
+              className={`mobile-touch-target flex-1 gradient-primary hover:shadow-xl text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center space-x-3 ${mobileInfo.touchSupport ? 'active:scale-98' : 'hover:scale-105'} shadow-lg font-chinese ${mobileInfo.isMobile ? 'min-h-[48px] text-base' : ''}`}
             >
               <Save size={20} />
               <span>{isEditing ? '保存更改' : '创建链条'}</span>
             </button>
           </div>
         </form>
-      </div>
+      </ResponsiveContainer>
     </div>
   );
 };

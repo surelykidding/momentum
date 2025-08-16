@@ -77,7 +77,7 @@ export class MigrationHelper {
   async getMigrationStatus(): Promise<Record<string, boolean>> {
     const migrations = [
       '20250730021823_winter_flame',
-      '20250801160754_peaceful_palace', 
+      '20250801160754_peaceful_palace',
       '20250801161456_fading_sunset',
       '20250808000000_add_group_time_limit',
       '20250808001000_add_durationless_flag',
@@ -85,11 +85,11 @@ export class MigrationHelper {
     ];
 
     const status: Record<string, boolean> = {};
-    
+
     for (const migration of migrations) {
       status[migration] = await this.isMigrationApplied(migration);
     }
-    
+
     return status;
   }
 
@@ -99,40 +99,40 @@ export class MigrationHelper {
   async generateMigrationSQL(): Promise<string> {
     const status = await this.getMigrationStatus();
     const schemaStatus = await schemaChecker.getSchemaStatus();
-    
+
     let sql = '-- 自动生成的迁移SQL\n';
     sql += `-- 生成时间: ${new Date().toISOString()}\n\n`;
-    
+
     if (!status['20250730021823_winter_flame']) {
       sql += '-- 基础表结构迁移\n';
       sql += '-- 来源: 20250730021823_winter_flame.sql\n\n';
       sql += this.getBasicTableSQL() + '\n\n';
     }
-    
+
     if (!status['20250801160754_peaceful_palace']) {
       sql += '-- 任务群功能支持迁移\n';
       sql += '-- 来源: 20250801160754_peaceful_palace.sql\n\n';
       sql += this.getHierarchySQL() + '\n\n';
     }
-    
+
     if (!status['20250808000000_add_group_time_limit']) {
       sql += '-- 任务群时间限制功能迁移\n';
       sql += '-- 来源: 20250808000000_add_group_time_limit.sql\n\n';
       sql += this.getTimeLimitSQL() + '\n\n';
     }
-    
+
     if (!status['20250808001000_add_durationless_flag']) {
       sql += '-- 无时长任务功能迁移\n';
       sql += '-- 来源: 20250808001000_add_durationless_flag.sql\n\n';
       sql += this.getDurationlessSQL() + '\n\n';
     }
-    
+
     if (!status['20250810000000_add_rsip_tables']) {
       sql += '-- RSIP功能表迁移\n';
       sql += '-- 来源: 20250810000000_add_rsip_tables.sql\n\n';
       sql += this.getRSIPSQL() + '\n\n';
     }
-    
+
     return sql;
   }
 
@@ -278,17 +278,17 @@ ALTER TABLE IF EXISTS public.rsip_meta ENABLE ROW LEVEL SECURITY;
   async generateMigrationReport(): Promise<string> {
     const migrationStatus = await this.getMigrationStatus();
     const schemaStatus = await schemaChecker.getSchemaStatus();
-    
+
     let report = '# 数据库迁移状态报告\n\n';
     report += `生成时间: ${new Date().toISOString()}\n`;
     report += `总体状态: ${schemaStatus.migrationStatus}\n\n`;
-    
+
     report += '## 迁移文件状态\n\n';
     Object.entries(migrationStatus).forEach(([migration, applied]) => {
       const status = applied ? '✅ 已应用' : '❌ 未应用';
       report += `- ${migration}: ${status}\n`;
     });
-    
+
     report += '\n## 建议的操作\n\n';
     if (schemaStatus.recommendations.length > 0) {
       schemaStatus.recommendations.forEach((rec, index) => {
@@ -297,11 +297,11 @@ ALTER TABLE IF EXISTS public.rsip_meta ENABLE ROW LEVEL SECURITY;
     } else {
       report += '所有迁移已正确应用，无需额外操作。\n';
     }
-    
+
     const unappliedMigrations = Object.entries(migrationStatus)
       .filter(([_, applied]) => !applied)
       .map(([migration, _]) => migration);
-    
+
     if (unappliedMigrations.length > 0) {
       report += '\n## 如何应用缺失的迁移\n\n';
       report += '1. 在 Supabase Dashboard 中打开 SQL Editor\n';
@@ -311,7 +311,7 @@ ALTER TABLE IF EXISTS public.rsip_meta ENABLE ROW LEVEL SECURITY;
       report += '```\n\n';
       report += '3. 刷新应用程序以验证迁移是否成功\n';
     }
-    
+
     return report;
   }
 }
