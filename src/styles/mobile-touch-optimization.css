@@ -1,0 +1,216 @@
+/**
+ * 移动端触摸优化样式
+ * 确保所有交互元素都有足够的触摸区域
+ */
+
+/* 基础触摸区域优化 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 按钮触摸优化 */
+button, .btn {
+  min-height: 44px;
+  padding: 12px 16px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 小按钮的触摸区域扩展 */
+.btn-small {
+  position: relative;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.btn-small::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-height: 44px;
+  min-width: 44px;
+  z-index: -1;
+}
+
+/* 输入框触摸优化 */
+input, textarea, select {
+  min-height: 44px;
+  padding: 12px 16px;
+  font-size: 16px; /* 防止iOS缩放 */
+}
+
+/* 移动端间距优化 */
+@media (max-width: 768px) {
+  .mobile-spacing {
+    padding: 16px;
+  }
+  
+  .mobile-spacing-sm {
+    padding: 12px;
+  }
+  
+  .mobile-spacing-lg {
+    padding: 24px;
+  }
+  
+  /* 增加移动端的行间距 */
+  .mobile-line-height {
+    line-height: 1.6;
+  }
+  
+  /* 移动端字体大小优化 */
+  .mobile-text-base {
+    font-size: 16px;
+  }
+  
+  .mobile-text-sm {
+    font-size: 14px;
+  }
+  
+  .mobile-text-lg {
+    font-size: 18px;
+  }
+}
+
+/* 虚拟键盘适配 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .keyboard-adaptive {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .keyboard-adaptive .modal-content {
+    max-height: 70vh;
+  }
+}
+
+/* 横竖屏切换优化 */
+@media (orientation: portrait) {
+  .orientation-adaptive {
+    flex-direction: column;
+  }
+  
+  .orientation-adaptive .sidebar {
+    width: 100%;
+    height: auto;
+  }
+}
+
+@media (orientation: landscape) {
+  .orientation-adaptive {
+    flex-direction: row;
+  }
+  
+  .orientation-adaptive .sidebar {
+    width: 300px;
+    height: 100vh;
+  }
+}
+
+/* 滚动优化 */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 防止过度滚动 */
+.prevent-overscroll {
+  overscroll-behavior: contain;
+}
+
+/* 触摸反馈优化 */
+.touch-feedback {
+  transition: all 0.15s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* 手势优化 */
+.swipe-container {
+  touch-action: pan-x pan-y;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 移动端模态框优化 */
+@media (max-width: 768px) {
+  .mobile-modal {
+    margin: 8px;
+    max-height: calc(100vh - 16px);
+    border-radius: 16px;
+  }
+  
+  .mobile-modal .modal-header {
+    padding: 16px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .mobile-modal .modal-body {
+    padding: 16px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+  
+  .mobile-modal .modal-footer {
+    padding: 16px;
+    border-radius: 0 0 16px 16px;
+  }
+}
+
+/* 安全区域适配 */
+@supports (padding: max(0px)) {
+  .safe-area-inset {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+/* 高DPI屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-border {
+    border-width: 0.5px;
+  }
+  
+  .high-dpi-icon {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* 深色模式下的触摸优化 */
+@media (prefers-color-scheme: dark) {
+  .touch-feedback:active {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* 减少动画的用户偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .touch-feedback {
+    transition: none;
+  }
+  
+  .touch-feedback:active {
+    transform: none;
+  }
+}
