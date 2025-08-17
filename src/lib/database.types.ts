@@ -159,6 +159,8 @@ export interface Database {
           was_successful: boolean
           reason_for_failure: string | null
           user_id: string
+          description: string | null
+          notes: string | null
         }
         Insert: {
           id?: string
@@ -168,6 +170,8 @@ export interface Database {
           was_successful: boolean
           reason_for_failure?: string | null
           user_id: string
+          description?: string | null
+          notes?: string | null
         }
         Update: {
           id?: string
@@ -177,6 +181,8 @@ export interface Database {
           was_successful?: boolean
           reason_for_failure?: string | null
           user_id?: string
+          description?: string | null
+          notes?: string | null
         }
       }
       rsip_nodes: {
