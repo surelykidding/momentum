@@ -801,19 +801,37 @@ export class SupabaseStorage {
     const user = await getCurrentUser();
     if (!user) return;
 
+    console.log('[DEBUG] saveCompletionHistory - 输入历史记录数量:', history.length);
+
     // Get existing history to determine what's new
     const { data: existingHistory } = await supabase
       .from('completion_history')
       .select('chain_id, completed_at')
       .eq('user_id', user.id);
 
+    console.log('[DEBUG] saveCompletionHistory - 数据库中现有记录数量:', existingHistory?.length || 0);
+
+    // Create more robust duplicate detection using timestamp normalization
     const existingKeys = new Set(
-      existingHistory?.map(h => `${h.chain_id}-${h.completed_at}`) || []
+      existingHistory?.map(h => {
+        // Normalize timestamp to avoid precision issues
+        const normalizedTime = new Date(h.completed_at).getTime();
+        const key = `${h.chain_id}-${normalizedTime}`;
+        console.log('[DEBUG] 现有记录键:', key, '原始时间:', h.completed_at);
+        return key;
+      }) || []
     );
 
-    const newHistory = history.filter(h => 
-      !existingKeys.has(`${h.chainId}-${h.completedAt.toISOString()}`)
-    );
+    const newHistory = history.filter(h => {
+      // Use same normalization for comparison
+      const normalizedTime = h.completedAt.getTime();
+      const key = `${h.chainId}-${normalizedTime}`;
+      const isDuplicate = existingKeys.has(key);
+      console.log('[DEBUG] 检查记录:', key, '是否重复:', isDuplicate, '原始时间:', h.completedAt.toISOString());
+      return !isDuplicate;
+    });
+
+    console.log('[DEBUG] saveCompletionHistory - 过滤后新记录数量:', newHistory.length);
 
     // Insert new history records
     if (newHistory.length > 0) {
