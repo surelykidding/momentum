@@ -44,7 +44,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   
   // 中断确认对话框状态
   const [showInterruptDialog, setShowInterruptDialog] = useState(false);
-  
   // 暂停后自动恢复
   const AUTO_RESUME_STORAGE_KEY = 'momentum_auto_resume';
   const [autoResumeAt, setAutoResumeAt] = useState<number | null>(null);
@@ -198,7 +197,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const handleCancelInterrupt = () => {
     setShowInterruptDialog(false);
   };
-
   // 处理暂停操作
   const handlePauseClick = () => {
     setPendingActionType('pause');
@@ -824,7 +822,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           </button>
         </div>
       )}
-
       {/* Rule Selection Dialog */}
       {showRuleSelection && pendingActionType && (
         <RuleSelectionDialog
@@ -883,7 +880,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           </div>
         </div>
       )}
-
       {/* User Feedback Display */}
       <UserFeedbackDisplay />
     </div>

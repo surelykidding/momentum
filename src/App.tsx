@@ -136,6 +136,7 @@ function App() {
               chain={activeChain}
               onComplete={handleCompleteSession}
               onInterrupt={handleInterruptSession}
+              onAddException={handleAddException}
               onPause={handlePauseSession}
               onResume={handleResumeSession}
             />
