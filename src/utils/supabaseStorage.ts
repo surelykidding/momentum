@@ -792,6 +792,8 @@ export class SupabaseStorage {
       // 新增字段，向后兼容
       actualDuration: (history as any).actual_duration || history.duration,
       isForwardTimed: (history as any).is_forward_timed || false,
+      description: (history as any).description || undefined,
+      notes: (history as any).notes || undefined,
     }));
   }
 
@@ -827,6 +829,8 @@ export class SupabaseStorage {
             reason_for_failure: h.reasonForFailure,
             actual_duration: (h as any).actualDuration || h.duration,
             is_forward_timed: (h as any).isForwardTimed || false,
+            description: (h as any).description || null,
+            notes: (h as any).notes || null,
             user_id: user.id,
           })));
       };
@@ -840,6 +844,8 @@ export class SupabaseStorage {
             duration: h.duration,
             was_successful: h.wasSuccessful,
             reason_for_failure: h.reasonForFailure,
+            description: (h as any).description || null,
+            notes: (h as any).notes || null,
             user_id: user.id,
           })));
       };
