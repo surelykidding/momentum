@@ -4,7 +4,6 @@ import { CheckCircle, Settings, Maximize, Minimize, X, AlertTriangle } from 'luc
 import { formatDuration, formatElapsedTime, formatTimeDescription, formatLastCompletionReference } from '../utils/time';
 import { notificationManager } from '../utils/notifications';
 import { forwardTimerManager } from '../utils/forwardTimer';
-import { storage } from '../utils/storage';
 import { exceptionRuleManager } from '../services/ExceptionRuleManager';
 import { RuleSelectionDialog } from './RuleSelectionDialog';
 import { TaskCompletionDialog } from './TaskCompletionDialog';
@@ -16,6 +15,7 @@ import { EnhancedExceptionRuleException } from '../types';
 interface FocusModeProps {
   session: ActiveSession;
   chain: Chain;
+  storage: any;
   onComplete: (description?: string, notes?: string) => void;
   onInterrupt: (reason?: string) => void;
   onPause: (duration?: number) => void;
@@ -26,6 +26,7 @@ interface FocusModeProps {
 export const FocusMode: React.FC<FocusModeProps> = ({
   session,
   chain,
+  storage,
   onComplete,
   onInterrupt,
   onPause,
@@ -841,6 +842,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           chainName={chain.name}
           chainId={chain.id}
           isDurationless={isDurationless}
+          storage={storage}
           onComplete={handleDirectComplete}
           onCancel={handleCompletionDialogCancel}
         />

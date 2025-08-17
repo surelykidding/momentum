@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, CheckCircle, FileText, MessageSquare, History, RotateCcw } from 'lucide-react';
-import { storage } from '../utils/storage';
 
 interface TaskCompletionDialogProps {
   isOpen: boolean;
   chainName: string;
   chainId: string;
   isDurationless?: boolean;
+  storage: any;
   onComplete: (description: string, notes?: string) => void;
   onCancel: () => void;
 }
@@ -16,6 +16,7 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
   chainName,
   chainId,
   isDurationless = false,
+  storage,
   onComplete,
   onCancel,
 }) => {
@@ -104,13 +105,28 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
     descriptionInputRef.current?.focus();
   };
 
+  // Basic input sanitization to prevent XSS
+  const sanitizeInput = (input: string): string => {
+    return input
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;')
+      .trim();
+  };
+
   const handleSubmit = () => {
     if (isDurationless && !description.trim()) {
       // For infinite duration tasks, description is required
       return;
     }
+    // Sanitize inputs before submitting
+    const sanitizedDescription = sanitizeInput(description);
+    const sanitizedNotes = notes.trim() ? sanitizeInput(notes) : undefined;
+    
     // For finite duration tasks, description is optional
-    onComplete(description.trim() || '', notes.trim() || undefined);
+    onComplete(sanitizedDescription || '', sanitizedNotes);
     // Reset form
     setDescription('');
     setNotes('');

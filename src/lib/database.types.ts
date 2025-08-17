@@ -161,6 +161,8 @@ export interface Database {
           user_id: string
           description: string | null
           notes: string | null
+          actual_duration: number | null
+          is_forward_timed: boolean | null
         }
         Insert: {
           id?: string
@@ -172,6 +174,8 @@ export interface Database {
           user_id: string
           description?: string | null
           notes?: string | null
+          actual_duration?: number | null
+          is_forward_timed?: boolean | null
         }
         Update: {
           id?: string
@@ -183,6 +187,8 @@ export interface Database {
           user_id?: string
           description?: string | null
           notes?: string | null
+          actual_duration?: number | null
+          is_forward_timed?: boolean | null
         }
       }
       rsip_nodes: {

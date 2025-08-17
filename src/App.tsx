@@ -134,6 +134,7 @@ function App() {
             <FocusMode
               session={state.activeSession}
               chain={activeChain}
+              storage={storage}
               onComplete={handleCompleteSession}
               onInterrupt={handleInterruptSession}
               onAddException={handleAddException}
