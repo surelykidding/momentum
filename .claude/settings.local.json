@@ -5,7 +5,9 @@
       "Bash(node:*)",
       "Bash(rm:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)"
     ],
     "defaultMode": "acceptEdits"
   }

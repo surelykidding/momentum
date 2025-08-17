@@ -840,6 +840,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           isOpen={showCompletionDialog}
           chainName={chain.name}
           chainId={chain.id}
+          isDurationless={isDurationless}
           onComplete={handleDirectComplete}
           onCancel={handleCompletionDialogCancel}
         />

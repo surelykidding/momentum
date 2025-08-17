@@ -6,6 +6,7 @@ interface TaskCompletionDialogProps {
   isOpen: boolean;
   chainName: string;
   chainId: string;
+  isDurationless?: boolean;
   onComplete: (description: string, notes?: string) => void;
   onCancel: () => void;
 }
@@ -14,6 +15,7 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
   isOpen,
   chainName,
   chainId,
+  isDurationless = false,
   onComplete,
   onCancel,
 }) => {
@@ -103,14 +105,17 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
   };
 
   const handleSubmit = () => {
-    if (description.trim()) {
-      onComplete(description.trim(), notes.trim() || undefined);
-      // Reset form
-      setDescription('');
-      setNotes('');
-      setIsNotesVisible(false);
-      setShowQuickFill(false);
+    if (isDurationless && !description.trim()) {
+      // For infinite duration tasks, description is required
+      return;
     }
+    // For finite duration tasks, description is optional
+    onComplete(description.trim() || '', notes.trim() || undefined);
+    // Reset form
+    setDescription('');
+    setNotes('');
+    setIsNotesVisible(false);
+    setShowQuickFill(false);
   };
 
   const handleCancel = () => {
@@ -158,7 +163,7 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
               <div className="flex items-center space-x-2">
                 <FileText className="text-gray-500 dark:text-gray-400" size={16} />
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  任务描述 *
+                  任务描述{isDurationless ? ' *' : ' (可选)'}
                 </label>
               </div>
               
@@ -182,9 +187,9 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={handleDescriptionKeyDown}
-              placeholder="例如：完成cs61a的第一部分（按Tab添加备注或自动填充）"
+              placeholder={isDurationless ? "例如：完成cs61a的第一部分（按Tab添加备注或自动填充）" : "例如：完成cs61a的第一部分（可选，按Tab添加备注）"}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-              required
+              required={isDurationless}
             />
             
             {/* Quick Fill Panel */}
@@ -211,7 +216,9 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
             )}
             
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              按Tab键添加备注或自动填充，按Shift+Tab显示历史，按Enter完成
+              {isDurationless 
+                ? "按Tab键添加备注或自动填充，按Shift+Tab显示历史，按Enter完成" 
+                : "任务描述为可选，按Tab键添加备注，按Enter完成"}
             </p>
           </div>
 
@@ -266,7 +273,7 @@ export const TaskCompletionDialog: React.FC<TaskCompletionDialogProps> = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!description.trim()}
+              disabled={isDurationless && !description.trim()}
               className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
             >
               完成任务
