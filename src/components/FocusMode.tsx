@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ActiveSession, Chain } from '../types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatDuration } from '../utils/time';
+import { notificationManager } from '../utils/notifications';
 
 interface FocusModeProps {
   session: ActiveSession;
@@ -9,6 +10,8 @@ interface FocusModeProps {
   onComplete: () => void;
   onInterrupt: (reason?: string) => void;
   onAddException: (exceptionRule: string) => void;
+  onPause: () => void;
+  onResume: () => void;
 }
 
 export const FocusMode: React.FC<FocusModeProps> = ({
@@ -17,33 +20,52 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   onComplete,
   onInterrupt,
   onAddException,
+  onPause,
+  onResume,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
   const [showInterruptWarning, setShowInterruptWarning] = useState(false);
   const [interruptReason, setInterruptReason] = useState('');
   const [selectedExistingRule, setSelectedExistingRule] = useState('');
   const [useExistingRule, setUseExistingRule] = useState(false);
 
+  const isDurationless = !!chain.isDurationless || session.duration === 0;
+
+  // 计时逻辑（有时长时启用）
   useEffect(() => {
+    if (isDurationless) return; // 无时长任务不计时
+
+    const getNotificationThreshold = (durationMinutes: number) => {
+      if (durationMinutes <= 3) return null;
+      const thresholdMinutes = Math.floor(durationMinutes / 3);
+      return Math.min(thresholdMinutes, 1) * 60;
+    };
+
+    const notificationThreshold = getNotificationThreshold(session.duration);
+
     const calculateTimeRemaining = () => {
       const now = Date.now();
       const sessionDurationMs = session.duration * 60 * 1000;
       const elapsedTime = session.isPaused 
         ? (session.pausedAt?.getTime() || now) - session.startedAt.getTime()
         : now - session.startedAt.getTime();
-      
       const adjustedElapsedTime = elapsedTime - session.totalPausedTime;
       const remaining = Math.max(0, sessionDurationMs - adjustedElapsedTime);
-      
       return Math.ceil(remaining / 1000);
     };
 
     const updateTimer = () => {
       if (session.isPaused) return;
-      
       const remaining = calculateTimeRemaining();
       setTimeRemaining(remaining);
-      
+
+      if (notificationThreshold && remaining <= notificationThreshold && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.max(1, Math.ceil(remaining / 60));
+        notificationManager.notifyTaskWarning(chain.name, `${minutes}分钟`);
+      }
+
       if (remaining <= 0) {
         onComplete();
       }
@@ -52,13 +74,20 @@ export const FocusMode: React.FC<FocusModeProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [session, onComplete]);
+  }, [session, onComplete, hasShownWarning, chain.name, isDurationless]);
 
-  const progress = ((session.duration * 60 - timeRemaining) / (session.duration * 60)) * 100;
+  // 重置警告状态当会话改变时
+  useEffect(() => { setHasShownWarning(false); }, [session.startedAt, session.chainId]);
 
-  const handleInterruptClick = () => {
-    setShowInterruptWarning(true);
-  };
+  const elapsedSeconds = isDurationless
+    ? Math.floor((Date.now() - session.startedAt.getTime() - session.totalPausedTime) / 1000)
+    : session.duration * 60 - timeRemaining;
+
+  const progress = isDurationless
+    ? 100
+    : ((session.duration * 60 - timeRemaining) / (session.duration * 60)) * 100;
+
+  const handleInterruptClick = () => setShowInterruptWarning(true);
 
   const handleJudgmentFailure = () => {
     onInterrupt(interruptReason || '用户主动中断');
@@ -68,11 +97,9 @@ export const FocusMode: React.FC<FocusModeProps> = ({
   const handleJudgmentAllow = () => {
     const ruleToAdd = useExistingRule ? selectedExistingRule : interruptReason.trim();
     if (ruleToAdd) {
-      // 只有在使用新规则且不存在时才添加
       if (!useExistingRule && !chain.exceptions.includes(ruleToAdd)) {
         onAddException(ruleToAdd);
       }
-      // 不调用 onComplete()，允许继续当前会话
     }
     setShowInterruptWarning(false);
   };
@@ -118,7 +145,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
         {/* Timer display */}
         <div className="mb-16">
           <div className="text-8xl md:text-9xl font-mono font-light text-gray-900 dark:text-white mb-8 tracking-wider">
-            {formatDuration(timeRemaining)}
+            {isDurationless ? '∞' : formatDuration(timeRemaining)}
           </div>
           
           {/* Progress bar */}
@@ -133,7 +160,9 @@ export const FocusMode: React.FC<FocusModeProps> = ({
             <div className="flex items-center space-x-2">
               <i className="fas fa-clock text-primary-500"></i>
               <span className="font-mono">
-                {Math.floor((session.duration * 60 - timeRemaining) / 60)}分钟 / {session.duration}分钟
+                {isDurationless
+                  ? `已用时 ${formatDuration(elapsedSeconds)}`
+                  : `${Math.floor((session.duration * 60 - timeRemaining) / 60)}分钟 / ${session.duration}分钟`}
               </span>
             </div>
             <div className="flex items-center space-x-2">
@@ -143,22 +172,24 @@ export const FocusMode: React.FC<FocusModeProps> = ({
           </div>
         </div>
 
-        {session.isPaused && (
-          <div className="mt-12 p-6 bg-yellow-100 dark:bg-yellow-500/10 backdrop-blur-sm rounded-3xl border border-yellow-300 dark:border-yellow-500/30 max-w-md mx-auto animate-scale-in">
-            <div className="flex items-center justify-center space-x-3 mb-2">
-              <i className="fas fa-pause text-yellow-600 dark:text-yellow-400 text-xl"></i>
-              <p className="text-yellow-700 dark:text-yellow-300 text-xl font-chinese font-medium">任务已暂停</p>
-            </div>
-            <p className="text-yellow-600 dark:text-yellow-400 text-sm font-mono">TASK PAUSED - Click to resume</p>
+        {!session.isPaused && (
+          <div className="flex items-center justify-center space-x-4">
+            {isDurationless ? (
+              <button onClick={onComplete} className="px-8 py-4 rounded-3xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300 shadow-lg">
+                手动完成任务
+              </button>
+            ) : (
+              <>
+                <button onClick={onPause} className="px-6 py-3 rounded-2xl bg-yellow-500/90 hover:bg-yellow-500 text-white font-chinese transition-all duration-300">暂停</button>
+                <button onClick={onComplete} className="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-chinese transition-all duration-300">提前完成</button>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* Interrupt button */}
-      <button
-        onClick={handleInterruptClick}
-        className="fixed bottom-8 right-8 bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-3xl font-medium transition-all duration-300 flex items-center space-x-3 border border-red-400 hover:border-red-500 hover:scale-105 shadow-2xl font-chinese"
-      >
+      <button onClick={handleInterruptClick} className="fixed bottom-8 right-8 bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-3xl font-medium transition-all duration-300 flex items-center space-x-3 border border-red-400 hover:border-red-500 hover:scale-105 shadow-2xl font-chinese">
         <AlertTriangle size={20} />
         <span>中断/规则判定</span>
       </button>

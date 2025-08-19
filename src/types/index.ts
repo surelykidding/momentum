@@ -18,6 +18,13 @@ export interface Chain {
   auxiliarySignal: string; // 预约信号，如"打响指"、"设置闹钟"
   auxiliaryDuration: number; // 预约时长（分钟）
   auxiliaryCompletionTrigger: string; // 预约完成条件，通常与主链trigger相同
+  // 任务群时间限定设置
+  timeLimitHours?: number; // 时间限制（小时），仅在 type=group 时有效
+  timeLimitExceptions: string[]; // 时间限制例外规则
+  groupStartedAt?: Date; // 任务群开始时间
+  groupExpiresAt?: Date; // 任务群过期时间
+  // 无时长任务（手动结束）
+  isDurationless?: boolean; // 为 true 时不倒计时，由用户手动结束
   createdAt: Date;
   lastCompletedAt?: Date;
 }

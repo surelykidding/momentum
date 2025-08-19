@@ -1,33 +1,41 @@
 import React from 'react';
 import { ChainTreeNode, ScheduledSession } from '../types';
-import { ArrowLeft, Play, Plus, Users, Target } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Users, Target, Import, Pencil } from 'lucide-react';
 import { getGroupProgress, getNextUnitInGroup, getChainTypeConfig } from '../utils/chainTree';
 import { formatTime } from '../utils/time';
+import { getGroupTimeStatus } from '../utils/timeLimit';
+import { ImportUnitsModal } from './ImportUnitsModal';
 
 interface GroupViewProps {
   group: ChainTreeNode;
   scheduledSessions: ScheduledSession[];
+  availableUnits: ChainTreeNode[]; // 可导入的单元
   onBack: () => void;
   onStartChain: (chainId: string) => void;
   onScheduleChain: (chainId: string) => void;
   onEditChain: (chainId: string) => void;
   onDeleteChain: (chainId: string) => void;
   onAddUnit: () => void;
+  onImportUnits: (unitIds: string[], groupId: string, mode?: 'move' | 'copy') => void;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({
   group,
   scheduledSessions,
+  availableUnits,
   onBack,
   onStartChain,
   onScheduleChain,
   onEditChain,
   onDeleteChain,
   onAddUnit,
+  onImportUnits,
 }) => {
   const progress = getGroupProgress(group);
   const nextUnit = getNextUnitInGroup(group);
   const typeConfig = getChainTypeConfig(group.type);
+  const timeStatus = getGroupTimeStatus(group);
+  const [showImportModal, setShowImportModal] = React.useState(false);
 
   const getScheduledSession = (chainId: string) => {
     return scheduledSessions.find(session => session.chainId === chainId);
@@ -166,6 +174,23 @@ export const GroupView: React.FC<GroupViewProps> = ({
               <span>添加单元</span>
             </button>
             
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 font-chinese"
+            >
+              <Import size={16} />
+              <span>导入单元</span>
+            </button>
+
+            <button
+              onClick={() => onEditChain(group.id)}
+              className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 font-chinese"
+              title="编辑任务群"
+            >
+              <Pencil size={16} />
+              <span>编辑任务群</span>
+            </button>
+
             {nextUnit && (
               <button
                 onClick={() => onStartChain(nextUnit.id)}
@@ -210,6 +235,59 @@ export const GroupView: React.FC<GroupViewProps> = ({
           <p className="text-gray-700 dark:text-slate-300 leading-relaxed font-chinese">
             {group.description}
           </p>
+
+          {/* 时间限定状态 */}
+          {group.timeLimitHours && (
+            <div className={`mt-6 p-4 rounded-2xl border-l-4 ${
+              timeStatus.isExpired 
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-500' 
+                : 'bg-orange-50 dark:bg-orange-900/20 border-orange-500'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <i className={`fas fa-clock text-lg ${
+                    timeStatus.isExpired ? 'text-red-500' : 'text-orange-500'
+                  }`}></i>
+                  <div>
+                    <h4 className={`font-bold font-chinese ${
+                      timeStatus.isExpired ? 'text-red-700 dark:text-red-300' : 'text-orange-700 dark:text-orange-300'
+                    }`}>
+                      {timeStatus.isExpired ? '任务群已超时' : '时间限制'}
+                    </h4>
+                    <p className={`text-sm ${
+                      timeStatus.isExpired ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'
+                    }`}>
+                      {timeStatus.formattedTime}
+                    </p>
+                  </div>
+                </div>
+                
+                {!timeStatus.isExpired && (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          timeStatus.progress > 0.8 ? 'bg-red-500' : 
+                          timeStatus.progress > 0.6 ? 'bg-orange-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${timeStatus.progress * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">
+                      {Math.round(timeStatus.progress * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {timeStatus.isExpired && (
+                <div className="mt-3 text-sm text-red-600 dark:text-red-400 font-chinese">
+                  <i className="fas fa-exclamation-triangle mr-2"></i>
+                  任务群已超时，进度将被清空。请重新开始任务群。
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Units List */}
@@ -244,6 +322,16 @@ export const GroupView: React.FC<GroupViewProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Import Units Modal */}
+      {showImportModal && (
+        <ImportUnitsModal
+          availableUnits={availableUnits}
+          groupId={group.id}
+          onImport={onImportUnits}
+          onClose={() => setShowImportModal(false)}
+        />
+      )}
     </div>
   );
 };

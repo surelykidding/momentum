@@ -3,6 +3,7 @@ import { Chain, ScheduledSession, ChainTreeNode } from '../types';
 import { Play, Clock } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 import { getChainTypeConfig } from '../utils/chainTree';
+import { notificationManager } from '../utils/notifications';
 
 interface ChainCardProps {
   chain: Chain | ChainTreeNode;
@@ -26,24 +27,56 @@ export const ChainCard: React.FC<ChainCardProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
+  
+  // 获取实际的链条数据，确保显示最新的时长信息
+  const actualChain = React.useMemo(() => {
+    // 如果传入的是 ChainTreeNode，需要确保数据是最新的
+    return chain;
+  }, [chain]);
 
   const typeConfig = getChainTypeConfig(chain.type);
 
+  // 计算通知时机
+  const getNotificationThreshold = (durationMinutes: number) => {
+    if (durationMinutes <= 3) return null; // 小于等于3分钟不通知
+    const thresholdMinutes = Math.floor(durationMinutes / 3);
+    return Math.min(thresholdMinutes, 1) * 60; // 转换为秒，最多1分钟
+  };
   useEffect(() => {
     if (!scheduledSession) return;
+
+    const notificationThreshold = getNotificationThreshold(chain.auxiliaryDuration);
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
+      
+      // 根据新逻辑显示警告通知
+      if (notificationThreshold && remaining <= notificationThreshold && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.max(1, Math.ceil(remaining / 60));
+        notificationManager.notifyScheduleWarning(
+          chain.name, 
+          `${minutes}分钟`
+        );
+      }
+      
       if (remaining <= 0) {
-        // Session expired - this would be handled by parent component
+        // 预约失败通知
+        notificationManager.notifyScheduleFailed(chain.name);
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession]);
+  }, [scheduledSession, hasShownWarning, chain.name, chain.auxiliaryDuration]);
+
+  // 重置警告状态当预约会话改变时
+  React.useEffect(() => {
+    setHasShownWarning(false);
+  }, [scheduledSession?.scheduledAt, scheduledSession?.chainId]);
 
   const isScheduled = scheduledSession && timeRemaining > 0;
 
@@ -102,18 +135,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
               <div className={`w-8 h-8 rounded-xl ${typeConfig.bgColor} flex items-center justify-center`}>
                 <i className={`${typeConfig.icon} ${typeConfig.color} text-sm`}></i>
               </div>
-              <div className={`w-8 h-8 rounded-xl ${typeConfig.bgColor} flex items-center justify-center`}>
-                <i className={`${typeConfig.icon} ${typeConfig.color} text-sm`}></i>
-              </div>
               <div>
                 <h3 className="text-2xl font-bold font-chinese text-gray-900 dark:text-slate-100 group-hover:text-primary-500 transition-colors">
                   {chain.name}
                 </h3>
-                {chain.type !== 'unit' && (
-                  <p className="text-xs font-mono text-gray-500 tracking-wide">
-                    {typeConfig.name}
-                  </p>
-                )}
                 {chain.type !== 'unit' && (
                   <p className="text-xs font-mono text-gray-500 tracking-wide">
                     {typeConfig.name}
@@ -152,10 +177,10 @@ export const ChainCard: React.FC<ChainCardProps> = ({
         <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
           <div className="flex items-center space-x-2 text-gray-700 dark:text-slate-300">
             <Clock size={16} />
-            <span className="font-medium">{formatTime(chain.duration)}</span>
+            <span className="font-medium">{formatTime(actualChain.duration)}</span>
           </div>
           <div className="text-gray-600 dark:text-slate-400 text-sm font-mono">
-            {chain.totalCompletions} completion{(chain.totalCompletions === 0 || chain.totalCompletions === 1) ? '' : 's'}
+            {actualChain.totalCompletions} completion{(actualChain.totalCompletions === 0 || actualChain.totalCompletions === 1) ? '' : 's'}
           </div>
         </div>
 

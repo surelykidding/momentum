@@ -29,6 +29,10 @@ export interface Database {
           auxiliary_signal: string
           auxiliary_duration: number
           auxiliary_completion_trigger: string
+          time_limit_hours: number | null
+          time_limit_exceptions: Json
+          group_started_at: string | null
+          group_expires_at: string | null
           created_at: string | null
           last_completed_at: string | null
           user_id: string
@@ -52,6 +56,10 @@ export interface Database {
           auxiliary_signal: string
           auxiliary_duration?: number
           auxiliary_completion_trigger: string
+          time_limit_hours?: number | null
+          time_limit_exceptions?: Json
+          group_started_at?: string | null
+          group_expires_at?: string | null
           created_at?: string | null
           last_completed_at?: string | null
           user_id: string
@@ -75,6 +83,10 @@ export interface Database {
           auxiliary_signal?: string
           auxiliary_duration?: number
           auxiliary_completion_trigger?: string
+          time_limit_hours?: number | null
+          time_limit_exceptions?: Json
+          group_started_at?: string | null
+          group_expires_at?: string | null
           created_at?: string | null
           last_completed_at?: string | null
           user_id?: string

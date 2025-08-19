@@ -3,6 +3,7 @@ import { ChainTreeNode, ScheduledSession } from '../types';
 import { Play, Clock, Users } from 'lucide-react';
 import { formatTime, getTimeRemaining, formatDuration } from '../utils/time';
 import { getGroupProgress, getChainTypeConfig } from '../utils/chainTree';
+import { notificationManager } from '../utils/notifications';
 
 interface GroupCardProps {
   group: ChainTreeNode;
@@ -26,23 +27,52 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
 
   const progress = getGroupProgress(group);
   const typeConfig = getChainTypeConfig(group.type);
   const isScheduled = scheduledSession && timeRemaining > 0;
 
+  // 计算通知时机
+  const getNotificationThreshold = (durationMinutes: number) => {
+    if (durationMinutes <= 3) return null; // 小于等于3分钟不通知
+    const thresholdMinutes = Math.floor(durationMinutes / 3);
+    return Math.min(thresholdMinutes, 1) * 60; // 转换为秒，最多1分钟
+  };
   React.useEffect(() => {
     if (!scheduledSession) return;
+
+    const notificationThreshold = getNotificationThreshold(group.auxiliaryDuration);
 
     const updateTimer = () => {
       const remaining = getTimeRemaining(scheduledSession.expiresAt);
       setTimeRemaining(remaining);
+      
+      // 根据新逻辑显示警告通知
+      if (notificationThreshold && remaining <= notificationThreshold && remaining > 0 && !hasShownWarning) {
+        setHasShownWarning(true);
+        const minutes = Math.max(1, Math.ceil(remaining / 60));
+        notificationManager.notifyScheduleWarning(
+          group.name, 
+          `${minutes}分钟`
+        );
+      }
+      
+      if (remaining <= 0) {
+        // 预约失败通知
+        notificationManager.notifyScheduleFailed(group.name);
+      }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [scheduledSession]);
+  }, [scheduledSession, hasShownWarning, group.name, group.auxiliaryDuration]);
+
+  // 重置警告状态当预约会话改变时
+  React.useEffect(() => {
+    setHasShownWarning(false);
+  }, [scheduledSession?.scheduledAt, scheduledSession?.chainId]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
